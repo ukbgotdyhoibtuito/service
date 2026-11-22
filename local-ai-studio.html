@@ -162,6 +162,7 @@ onmessage=async({data:d})=>{
 try{
 if(d.type==='load'){
 T=await import(d.lib===4?LIB4:LIB);eng=d.eng;
+if(d.safe){try{T.env.backends.onnx.wasm.numThreads=d.thr}catch(e){}}
 const pc=p=>postMessage({type:'prog',p});
 if(eng==='chat'){
 tok=await T.AutoTokenizer.from_pretrained(d.repo,{progress_callback:pc});
@@ -192,7 +193,7 @@ postMessage({type:'ready'});
 stopper=new T.InterruptableStoppingCriteria();
 const inp=tok.apply_chat_template(d.messages,{add_generation_prompt:true,return_dict:true,...(d.noThink?{enable_thinking:false}:{})});
 const pl=inp.input_ids.dims.at(-1);let nn=0;postMessage({type:'n',n:pl});
-const st=new T.TextStreamer(tok,{skip_prompt:true,skip_special_tokens:true,callback_function:t=>postMessage({type:'tok',t}),token_callback_function:()=>postMessage({type:'n',n:pl+(++nn)})});
+const st=new T.TextStreamer(tok,{skip_prompt:true,skip_special_tokens:true,callback_function:t=>postMessage({type:'tok',t}),token_callback_function:()=>{postMessage({type:'n',n:pl+(++nn)});if(d.gap){const t=performance.now()+d.gap;while(performance.now()<t){}}}});
 await m.generate({...inp,max_new_tokens:d.max,do_sample:true,temperature:.7,top_p:.9,streamer:st,stopping_criteria:stopper});
 postMessage({type:'done',cut:nn>=d.max});
 }else if(d.type==='count'){
@@ -261,6 +262,11 @@ const MODELS=[
 ];
 const $=(s,r=document)=>r.querySelector(s);const app=$('#app');
 const st={hw:null,kind:null,model:null,worker:null,tw:null,flt:new Set(),files:{},rows:{},hist:[],gal:[],tgal:[],busy:false,sys:'',max:1024,maxUser:false};
+st.safe=(()=>{try{return localStorage.getItem('lais_safe')!=='0'}catch(e){return true}})(); // 기기 보호 모드(기본 켜짐)
+const cpuThr=()=>Math.max(1,(navigator.hardwareConcurrency||4)>>1); // 보호 모드에서 CPU(wasm) 스레드는 절반만 사용
+// 토큰 사이 쉬는 시간(ms): 성능이 낮을수록 GPU를 쉬게 해서 발열·멈춤 방지
+const gapMs=()=>{const h=st.hw||{};return isMobile?40:h.tier==='low'?40:h.tier==='mid'?12:h.tier==='high'?0:20};
+const hardMax=m=>autoMax(m)*2; // 보호 모드에서 허용하는 최대 답변 길이
 const sysM=()=>st.sys.trim()?[{role:'system',content:st.sys}]:[];
 const isMobile=/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent)||(navigator.connection&&navigator.connection.type==='cellular');
 const fmt=g=>g<1?Math.round(g*1000)+'MB':g.toFixed(1)+'GB';
@@ -309,7 +315,7 @@ return false;
 async function removeModel(m){let n=0;
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
-function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
+function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(st.safe&&m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
 function killWorker(){if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 function spawn(){const u=URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'}));
 return new Worker(u,{type:'module'})}
@@ -321,6 +327,8 @@ app.innerHTML=`<h1><span style="color:var(--ac)">✳</span> Local AI Studio</h1>
 <div class="card" style="margin-top:16px"><span class="tag ${h.ok?'ok':'bad'}">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</span>
 <span class="sub">${h.name}${h.ok?` · 최대 버퍼 ${h.buf.toFixed(1)}GB`:''}${h.mem?` · 메모리 약 ${h.mem}GB`:''}${h.gf?` · 연산 성능 약 ${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'} (${{low:'낮음',mid:'보통',high:'높음'}[h.tier]})`:''}</span>
 ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크톱에서 열어 주세요. (이미지 처리는 WebGPU 없이도 가능)</div>'}</div>
+<div class="card" style="margin-top:10px"><label class="row" style="cursor:pointer"><input type="checkbox" id="sf" ${st.safe?'checked':''}><b class="grow">🛡 기기 보호 모드</b></label>
+<div class="sub" id="sfi" style="margin-top:4px"></div></div>
 <h3 class="sec">모델 테스트</h3><div class="sub">모델을 직접 받아 대화·이미지 생성·이미지 처리를 시험해 보세요.</div>
 <div class="grid"><button class="card big" data-k="chat">💬<b>대화</b><span class="sub">로컬 언어 모델과 채팅</span></button>
 <button class="card big" data-k="image">🎨<b>이미지 생성</b><span class="sub">텍스트로 이미지 만들기</span></button>
@@ -328,6 +336,8 @@ ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크�
 <h3 class="sec">로컬 모델 활용 툴</h3><div class="sub">내 컴퓨터의 로컬 모델로 실제 작업을 처리하는 도구예요.</div>
 <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
+const sfi=()=>{const g=gapMs();$('#sfi').textContent=st.safe?`켜짐 — 이 기기에 무리가 가지 않도록 조절합니다: 너무 큰 모델은 실행 차단(권장 ${h.cap>=3?'약 3.5':h.cap}GB 이하), 답변 길이 제한, ${g?`토큰 사이 ${g}ms 쉬어 GPU 부담 완화, `:''}CPU 처리는 스레드 ${cpuThr()}개만 사용.`:'꺼짐 — 제한 없이 최대 속도로 실행합니다. 큰 모델이나 긴 답변에서 브라우저나 기기가 멈출 수 있습니다.'};
+$('#sf').onchange=e=>{st.safe=e.target.checked;try{localStorage.setItem('lais_safe',st.safe?'1':'0')}catch(x){}sfi()};sfi();
 }
 async function pick(kind){
 killWorker(); // 모델 선택 화면에 들어오면 실행 중인 모델을 바로 종료해 GPU 메모리 해제
@@ -361,7 +371,7 @@ if(!confirm(`'${m.name}' 모델을 삭제할까요?\n저장된 파일(약 ${fmt(
 b.disabled=true;b.textContent='삭제 중…';await removeModel(m);pick(st.kind)});
 $('#mg').querySelectorAll('.model').forEach(el=>el.onclick=()=>{const m=MODELS.find(x=>x.id===el.dataset.id);
 if(!st.hw.ok&&!m.cpu)return alert('WebGPU를 사용할 수 없어 실행할 수 없습니다.');
-if(fit(m)!=='ok'&&!confirm('이 컴퓨터에서는 실행이 어려울 수 있습니다. 계속할까요?'))return;
+if(fit(m)!=='ok'){if(st.safe)return alert('기기 보호 모드가 켜져 있어 이 컴퓨터에 무리가 갈 수 있는 모델은 실행하지 않습니다.\n홈 화면에서 보호 모드를 끄면 직접 시도할 수 있습니다.');if(!confirm('이 컴퓨터에서는 실행이 어려울 수 있습니다. 계속할까요?'))return}
 load(m)})};bind();
 if($('#fb')){const upd=()=>{const n=st.flt.size;$('#fb').className='fbtn'+(n?' on':'');$('#fb').innerHTML='<span>⚲ 필터</span>'+(n?`<b>${n}</b>`:'');
 $('#fc').innerHTML=n?TAGS.filter(([k])=>st.flt.has(k)).map(([k,l])=>`<button class="fc" data-x="${k}">${l} ×</button>`).join(''):'<span class="sub">전체</span>';
@@ -392,7 +402,7 @@ else if(p.status==='ready'||p.status==='done'){}}
 else if(d.type==='ready')m.kind==='chat'?chat():m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView();
 else if(d.type==='err'){if(alt&&!tried){tried=1;w.terminate();st.files={};st.rows={};$('#fl').innerHTML='';$('#br i').style.width='0';$('#br').classList.add('ind');$('#ph').textContent='이전 버전 라이브러리로 다시 시도하는 중…';go(3)}else fail(d.msg)}
 };
-w.postMessage({type:'load',eng:m.engine||m.kind,repo:m.repo,dtype:m.dtype,cls:m.cls,lib,dev:st.hw&&st.hw.ok?'webgpu':'wasm'});
+w.postMessage({type:'load',eng:m.engine||m.kind,repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,safe:st.safe,thr:cpuThr(),lib,dev:st.hw&&st.hw.ok?'webgpu':'wasm'});
 setTimeout(()=>{if(st.worker===w&&!Object.keys(st.files).length)$('#ph').textContent+=' (GPU 초기화 중일 수 있음)'},8000)};
 go(m.kind==='chat'?4:3);$('#br').classList.add('ind');
 }
@@ -404,19 +414,19 @@ const fs=r.querySelector('.fs'),i=r.querySelector('i');
 if(p.status==='progress'&&p.total){const pc=Math.floor(p.loaded/p.total*100);i.style.width=pc+'%';fs.textContent=`${pc}% · ${(p.loaded/2**20).toFixed(1)}/${(p.total/2**20).toFixed(1)}MB`;r.classList.remove('dn')}
 else if(p.status==='done'){i.style.width='100%';fs.textContent='완료';r.classList.add('dn')}}
 function errText(m){m=String(m||'');
-if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.\n(상세: '+m.slice(0,160)+')';
+if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.safe?'':' 홈 화면에서 기기 보호 모드를 켜면 이런 상황을 줄일 수 있습니다.')+'\n(상세: '+m.slice(0,160)+')';
 if(/WebGPU|adapter|navigator\.gpu/i.test(m))return 'WebGPU를 사용할 수 없습니다. 최신 Chrome/Edge 데스크톱에서 열어 주세요.\n(상세: '+m.slice(0,160)+')';
 return m}
 function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
 function head(t,x=''){return `<div class="top"><button class="btn ghost" id="bk">← 모델 변경</button><h2 class="grow">${t}</h2><span class="tag ok">${st.model.name}</span>${x}</div>`}
 function chat(){
-st.hist=[];if(!st.maxUser)st.max=autoMax(st.model);
+st.hist=[];if(!st.maxUser)st.max=st.safe?autoMax(st.model):Math.max(autoMax(st.model),4096);
 app.innerHTML=head('대화','<button class="btn ghost" id="nw">새 대화</button><button class="btn ghost" id="gr">설정</button>')+`<div class="tkw"><div class="sub" id="tkn">토큰 계산 중…</div><div class="bar" style="height:5px;margin:4px 0 8px"><i id="tkb"></i></div></div><div id="set" class="card"><label class="sub">시스템 프롬프트</label><textarea id="sy" rows="2"></textarea>
 <label class="sub">최대 답변 길이(토큰) · 기기에 맞춰 자동 설정됨</label><input type="number" id="mx" min="64" max="8192" step="64"></div>
 <div id="msgs"></div><div class="comp"><textarea id="in" rows="1" placeholder="메시지 입력 (Shift+Enter 줄바꿈)"></textarea><button class="circ" id="sd" title="전송">↑</button></div>`;
 $('#sy').value=st.sys;$('#mx').value=st.max;
 $('#bk').onclick=()=>pick('chat');$('#gr').onclick=()=>$('#set').classList.toggle('on');
-$('#sy').oninput=e=>{st.sys=e.target.value;clearTimeout(ct);ct=setTimeout(count,150)};$('#mx').onchange=e=>{st.maxUser=true;st.max=Math.min(8192,Math.max(64,+e.target.value||1024))};
+$('#sy').oninput=e=>{st.sys=e.target.value;clearTimeout(ct);ct=setTimeout(count,150)};$('#mx').onchange=e=>{st.maxUser=true;let v=Math.min(8192,Math.max(64,+e.target.value||1024));if(st.safe&&v>hardMax(st.model)){v=hardMax(st.model);alert('기기 보호 모드에서는 이 모델의 답변 길이를 최대 '+v+'토큰까지만 허용합니다. 홈 화면에서 보호 모드를 끄면 더 늘릴 수 있습니다.')}st.max=v;e.target.value=v};
 $('#nw').onclick=()=>{if(st.busy)stop();st.gen=(st.gen||0)+1;st.hist=[];$('#msgs').innerHTML='';count()};
 const send=()=>{if(st.busy)return stop();const t=$('#in').value.trim();if(!t)return;$('#in').value='';$('#in').style.height='auto';
 add('u',t);st.hist.push({role:'user',content:t});const el=mkA(),g=st.gen||0;let acc='';st.busy=true;$('#sd').textContent='■';
@@ -427,7 +437,7 @@ else if(d.type==='tok'){acc+=d.t;paint(el,acc)}
 else if(d.type==='done'){fin(el);if(d.cut)el.insertAdjacentHTML('beforeend','<div class="sub" style="margin-top:6px">※ 최대 답변 길이에 도달해 잘렸습니다. \'계속\'이라고 보내거나 설정에서 길이를 늘려 주세요.</div>');if(g===(st.gen||0))st.hist.push({role:'assistant',content:parse(acc).an}); // 생성 중 '새 대화'를 눌렀다면 이전 답변을 새 대화에 넣지 않음
 end()}
 else if(d.type==='err'){el.querySelector('.ans').textContent='오류: '+errText(d.msg);if(/GPU 연결이 끊겼/.test(errText(d.msg))){st.hist.pop();$('#msgs').insertAdjacentHTML('beforeend','<div class="sub" style="text-align:center">GPU가 끊겨 이 모델은 다시 불러와야 합니다. 위의 \'← 모델 변경\'을 눌러 주세요.</div>')}end()}};
-w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,messages:[...sysM(),...st.hist]})};
+w.postMessage({type:'chat',noThink:st.model.noThink,max:st.safe?Math.min(st.max,hardMax(st.model)):st.max,gap:st.safe?gapMs():0,messages:[...sysM(),...st.hist]})};
 const end=()=>{st.busy=false;$('#sd').textContent='↑';st.worker.onmessage=idle;count()};
 const stop=()=>st.worker&&st.worker.postMessage({type:'stop'});
 $('#in').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px';clearTimeout(ct);ct=setTimeout(count,150)};$('#sd').onclick=send;st.worker.onmessage=idle;count();$('#in').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
@@ -467,7 +477,7 @@ else if(d.type==='tok')out+=d.t;
 else if(d.type==='done'){w.terminate();st.tw=null;const r=out.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<\/?think>/g,'').trim().replace(/^["']+|["']+$/g,'');
 if(!r)return next();$('#pr').value=r;rel('번역 완료 · '+m.name)}
 else if(d.type==='err')next()};
-w.postMessage({type:'load',eng:'chat',repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,lib:4})};
+w.postMessage({type:'load',eng:'chat',repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,safe:st.safe,thr:cpuThr(),lib:4})};
 $('#tr').onclick=async()=>{const t=$('#pr').value.trim();if(!t||st.busy)return;
 if(!/[가-힣]/.test(t)){$('#tm').textContent='한글이 없어 번역할 내용이 없습니다';return}
 const list=[];for(const id of ['qwen3-17','gemma3-1','qwen35-08','qwen3-06']){const x=MODELS.find(v=>v.id===id);if(x.gb<=1.5&&fit(x)==='ok'&&await cached(x))list.push(x)}
