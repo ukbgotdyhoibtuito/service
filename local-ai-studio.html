@@ -122,6 +122,14 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
  .grid{gap:10px}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.bar.ind i{animation:none;width:100%;opacity:.4}}
+.pm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.pm button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--ln);border-radius:10px;background:none;cursor:pointer;transition:border-color .15s,background-color .15s}
+.pm button:hover{border-color:var(--ac)}
+.pm button.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,transparent)}
+.pm .pn{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pm .pn i{font-style:normal;font-weight:500;font-size:11px;color:var(--ac);border:1px solid var(--ac);border-radius:99px;padding:0 6px}
+.pm .sub{font-size:12px}
+@media(max-width:520px){.pm{grid-template-columns:1fr}}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -501,19 +509,20 @@ const fs=r.querySelector('.fs'),i=r.querySelector('i');
 if(p.status==='progress'&&p.total){const pc=Math.floor(p.loaded/p.total*100);i.style.width=pc+'%';fs.textContent=`${pc}% · ${(p.loaded/2**20).toFixed(1)}/${(p.total/2**20).toFixed(1)}MB`;r.classList.remove('dn')}
 else if(p.status==='done'){i.style.width='100%';fs.textContent='완료';r.classList.add('dn')}}
 function errText(m){m=String(m||'');
-if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.pm===2?'':' ‘과부하 방지’를 켜거나 ‘안전’ 단계로 올리면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
+if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.pm===2?'':' ‘과부하 방지’를 ‘균형’ 또는 ‘안정 우선’으로 바꾸면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
 if(/WebGPU|adapter|navigator\.gpu/i.test(m))return 'WebGPU를 사용할 수 없습니다. 최신 Chrome/Edge 데스크톱에서 열어 주세요.\n(상세: '+m.slice(0,160)+')';
 return m}
 function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
-const PM_NAME=['끔','자동','안전'];
-const PM_DESC=['속도 조절 없이 최대 속도로 실행해요. 큰 모델이나 긴 작업에서 브라우저나 기기가 버벅이거나 멈출 수 있어요.',
-'기기 성능과 모델 크기에 맞춰 GPU에 쉬는 틈을 줘요. 가벼운 모델은 거의 그대로, 큰 모델은 조금 느려질 수 있어요.',
-'쉬는 시간을 두 배 넘게 늘려 가장 안정적으로 돌려요. 발열이 걱정되거나 자꾸 멈출 때 좋아요. 눈에 띄게 느려져요.'];
+const PM_NAME=['최고 속도','균형','안정 우선'],PM_SUB=['제한 없이 최대 속도','기기에 맞춰 자동 조절','느리지만 가장 안정적'];
+const PM_DESC=['쉬는 시간 없이 최대 속도로 돌려요. 큰 모델이나 긴 작업에서는 기기가 버벅이거나 멈출 수 있어요.',
+'기기 성능과 모델 크기에 맞춰 GPU에 쉬는 틈을 자동으로 줘요. 가벼운 모델은 거의 그대로, 큰 모델만 조금 느려져요.',
+'쉬는 시간을 2배 이상 늘려 가장 안정적으로 돌려요. 발열이 걱정되거나 자꾸 멈출 때 쓰세요. 눈에 띄게 느려져요.'];
 const pmNow=()=>{const h=st.hw||{},g=gapMs(st.model),tn={low:'낮음',mid:'보통',high:'높음'}[h.tier];
-return `이 기기${tn?`(성능 ${tn})`:''}${st.model?` · ${st.model.name}`:''} → ${st.pm===0?'조절 없음':g?`토큰·단계마다 약 ${g}ms 쉬어요`:'쉬는 시간이 거의 필요 없어요'}`};
+return `이 기기${tn?`(성능 ${tn})`:''}${st.model?` · ${st.model.name}`:''} → ${st.pm===0?'제한 없음':g?`토큰·단계마다 약 ${g}ms 쉬어요`:'쉬는 시간이 거의 필요 없어요'}`};
 function pmUI(box){if(!box)return;
-box.innerHTML=`<div class="row"><b class="grow">🛡️ 과부하 방지</b><div class="seg">${PM_NAME.map((n,i)=>`<button data-v="${i}" class="${st.pm===i?'on':''}">${n}</button>`).join('')}</div></div>
-<div class="sub" style="margin-top:8px">${PM_DESC[st.pm]}</div><div class="sub" style="margin-top:4px;opacity:.8">${pmNow()}</div>
+box.innerHTML=`<div class="row"><b class="grow">🛡️ 과부하 방지</b><span class="sub">속도 ↔ 안정성</span></div>
+<div class="pm" role="group" aria-label="과부하 방지 단계">${PM_NAME.map((n,i)=>`<button data-v="${i}" aria-pressed="${st.pm===i}" class="${st.pm===i?'on':''}"><span class="pn">${n}${i===1?'<i>추천</i>':''}</span><span class="sub">${PM_SUB[i]}</span></button>`).join('')}</div>
+<div class="sub" style="margin-top:10px">${PM_DESC[st.pm]}</div><div class="sub" style="margin-top:4px;opacity:.8">${pmNow()}</div>
 <details class="sub" style="margin-top:6px"><summary style="cursor:pointer">자세히 보기</summary><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7"><li>대화와 이미지 생성에서 GPU 연산 사이에 쉬는 시간을 넣어요 (토큰·단계마다).</li><li>쉬는 시간은 기기 성능 등급과 모델 크기로 자동 계산돼요. 모델이 이 기기 권장 크기보다 클수록 길어져요.</li><li>배경 제거·자막 추출 같은 CPU 작업은 스레드 ${cpuThr()}개만 써요 (모델을 불러올 때 적용).</li><li>바꾼 설정은 다음 요청부터 적용돼요.</li></ul></details>`;
 box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{setPm(+b.dataset.v);pmUI(box);const t=$('#pmt');if(t)t.outerHTML=pmTag()})}
 const pmTag=()=>st.safe?`<span class="tag" id="pmt" title="${PM_DESC[st.pm]}">🛡️ ${PM_NAME[st.pm]}</span>`:'<span id="pmt"></span>';
