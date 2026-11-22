@@ -194,7 +194,7 @@ const inp=tok.apply_chat_template(d.messages,{add_generation_prompt:true,return_
 const pl=inp.input_ids.dims.at(-1);let nn=0;postMessage({type:'n',n:pl});
 const st=new T.TextStreamer(tok,{skip_prompt:true,skip_special_tokens:true,callback_function:t=>postMessage({type:'tok',t}),token_callback_function:()=>postMessage({type:'n',n:pl+(++nn)})});
 await m.generate({...inp,max_new_tokens:d.max,do_sample:true,temperature:.7,top_p:.9,streamer:st,stopping_criteria:stopper});
-postMessage({type:'done'});
+postMessage({type:'done',cut:nn>=d.max});
 }else if(d.type==='count'){
 const ids=tok.apply_chat_template([...d.messages,...(d.draft?[{role:'user',content:d.draft}]:[])],{add_generation_prompt:!!d.draft,tokenize:true,return_tensor:false,...(d.noThink?{enable_thinking:false}:{})});
 postMessage({type:'cnt',n:ids.length});
@@ -260,7 +260,8 @@ const MODELS=[
 {id:'whisper-large-v3-turbo',kind:'sub',engine:'asr',name:'Whisper Large v3 Turbo',repo:'onnx-community/whisper-large-v3-turbo',gb:1,minBuf:2,lang:'다국어(한국어 우수)',desc:'가장 정확. WebGPU 필요, 첫 다운로드가 큼',pri:23}
 ];
 const $=(s,r=document)=>r.querySelector(s);const app=$('#app');
-const st={hw:null,kind:null,model:null,worker:null,tw:null,flt:new Set(),files:{},rows:{},hist:[],gal:[],tgal:[],busy:false,sys:'당신은 친절한 한국어 AI 어시스턴트입니다.',max:512};
+const st={hw:null,kind:null,model:null,worker:null,tw:null,flt:new Set(),files:{},rows:{},hist:[],gal:[],tgal:[],busy:false,sys:'',max:1024,maxUser:false};
+const sysM=()=>st.sys.trim()?[{role:'system',content:st.sys}]:[];
 const isMobile=/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent)||(navigator.connection&&navigator.connection.type==='cellular');
 const fmt=g=>g<1?Math.round(g*1000)+'MB':g.toFixed(1)+'GB';
 const TITLES={chat:'대화',image:'이미지 생성',tool:'이미지 처리',sub:'자막 추출'};
@@ -269,8 +270,37 @@ const h={ok:false,name:'WebGPU 미지원',buf:0,mem:navigator.deviceMemory||0};
 try{const a=navigator.gpu&&await navigator.gpu.requestAdapter();
 if(a){const i=a.info||{};h.ok=true;h.buf=a.limits.maxBufferSize/2**30;h.f16=a.features.has('shader-f16');
 h.name=[i.vendor,i.architecture,i.description].filter(Boolean).join(' ')||'GPU 감지됨'}}catch(e){}
+if(h.ok)h.gf=await bench(h.name);
+h.tier=h.gf==null?'?':h.gf<700?'low':h.gf<3000?'mid':'high';
+h.cap=recCap(h);
 st.hw=h;
 }
+// GPU 연산 성능을 약 0.1초 동안 실제로 측정(GFLOPS). 같은 GPU는 결과를 저장해 재사용
+async function bench(key){
+const ck='lais_gf_'+key;try{const c=+localStorage.getItem(ck);if(c>0)return c}catch(e){}
+try{const a=await navigator.gpu.requestAdapter(),d=await a.requestDevice();
+const mod=d.createShaderModule({code:`@group(0) @binding(0) var<storage,read_write> o:array<f32>;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g:vec3<u32>){
+var x=vec4<f32>(f32(g.x)*0.001);for(var i=0u;i<4096u;i++){x=fma(x,vec4<f32>(0.999),vec4<f32>(0.001));}
+o[g.x]=x.x+x.y+x.z+x.w;}`});
+const WG=4096,buf=d.createBuffer({size:WG*256*4,usage:GPUBufferUsage.STORAGE});
+const pl=d.createComputePipeline({layout:'auto',compute:{module:mod,entryPoint:'main'}});
+const bg=d.createBindGroup({layout:pl.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:buf}}]});
+const run=async n=>{const e=d.createCommandEncoder(),p=e.beginComputePass();p.setPipeline(pl);p.setBindGroup(0,bg);
+for(let i=0;i<n;i++)p.dispatchWorkgroups(WG);p.end();d.queue.submit([e.finish()]);await d.queue.onSubmittedWorkDone()};
+await run(1);const t0=performance.now();await run(3);const ms=performance.now()-t0;
+d.destroy();const gf=WG*256*4096*8*3/ms/1e6;
+try{localStorage.setItem(ck,String(Math.round(gf)))}catch(e){}return gf
+}catch(e){return null}}
+// 이 기기에서 안정적으로 돌릴 수 있는 모델 크기(GB) 상한: 메모리·GPU 버퍼·실측 성능·모바일 여부 중 가장 낮은 값
+function recCap(h){const mem=h.mem||4;
+const memCap=isMobile?0.9:mem<=4?0.9:mem<8?1.5:h.buf>=4?3.5:2.8;
+const perfCap=h.tier==='low'?1.0:h.tier==='mid'?1.6:h.tier==='high'?3.5:99;
+return Math.min(memCap,perfCap)}
+// 답변 최대 길이 자동 설정: 사양 등급과 모델 크기에 따라 (KV 캐시 메모리 고려)
+function autoMax(m){const h=st.hw||{};let n=h.tier==='low'?1024:h.tier==='mid'?2048:h.tier==='high'?4096:1024;
+if(isMobile)n=Math.min(n,1024);if((h.mem||4)<8&&m.gb>1.5)n=Math.min(n,1024);if(m.gb>2.5&&h.tier!=='high')n=Math.min(n,1024);
+return Math.max(512,n)}
 async function cached(m){ // 브라우저 캐시에 모델 파일이 있는지 확인
 try{for(const k of await caches.keys()){const c=await caches.open(k);
 if((await c.keys()).some(r=>r.url.includes('/'+m.repo+'/')))return true}}catch(e){}
@@ -279,7 +309,7 @@ return false;
 async function removeModel(m){let n=0;
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
-function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';return h.buf>=m.minBuf?'ok':'low'}
+function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
 function killWorker(){if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 function spawn(){const u=URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'}));
 return new Worker(u,{type:'module'})}
@@ -289,7 +319,7 @@ killWorker();st.kind=st.model=null;
 if(!st.hw)await detect();const h=st.hw;
 app.innerHTML=`<h1><span style="color:var(--ac)">✳</span> Local AI Studio</h1><div class="sub">모든 AI 처리는 이 컴퓨터 안에서 실행됩니다. 모델 다운로드 외에는 외부로 전송하지 않습니다.</div>
 <div class="card" style="margin-top:16px"><span class="tag ${h.ok?'ok':'bad'}">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</span>
-<span class="sub">${h.name}${h.ok?` · 최대 버퍼 ${h.buf.toFixed(1)}GB`:''}${h.mem?` · 메모리 약 ${h.mem}GB`:''}</span>
+<span class="sub">${h.name}${h.ok?` · 최대 버퍼 ${h.buf.toFixed(1)}GB`:''}${h.mem?` · 메모리 약 ${h.mem}GB`:''}${h.gf?` · 연산 성능 약 ${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'} (${{low:'낮음',mid:'보통',high:'높음'}[h.tier]})`:''}</span>
 ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크톱에서 열어 주세요. (이미지 처리는 WebGPU 없이도 가능)</div>'}</div>
 <h3 class="sec">모델 테스트</h3><div class="sub">모델을 직접 받아 대화·이미지 생성·이미지 처리를 시험해 보세요.</div>
 <div class="grid"><button class="card big" data-k="chat">💬<b>대화</b><span class="sub">로컬 언어 모델과 채팅</span></button>
@@ -305,10 +335,9 @@ st.kind=kind;const list=MODELS.filter(m=>m.kind===kind).sort((a,b)=>a.pri-b.pri)
 const states=await Promise.all(list.map(async m=>({m,f:fit(m),c:await cached(m)})));
 let recIds=[];
 if(kind==='chat'){
-// 사양별 자동 추천: 메모리·GPU 최대 버퍼·모바일 여부로 안정적으로 돌아갈 최대 크기를 정함
-const h=st.hw,mem=h.mem||4; // deviceMemory가 없으면 4GB로 가정
-const lim=isMobile?0.9:mem<=4?0.9:mem<8?1.5:h.buf>=4?3.5:2.8;
-const rec=[...states].filter(s=>s.f==='ok'&&s.m.gb<=lim&&!s.m.exp).pop(); // exp 표시 모델은 추천에서 제외
+// 사양별 자동 추천: 기기 상한(recCap)을 넘지 않는 모델 중 가장 큰 것
+const lim=st.hw.cap;
+const rec=[...states].filter(s=>s.f==='ok'&&s.m.gb<=lim&&!s.m.exp).pop();
 const mob=null;
 const r=(mob||rec)?.m.id;if(r)recIds=[r];
 }else recIds=states.filter(s=>s.f==='ok'&&s.m.best).map(s=>s.m.id);
@@ -381,13 +410,13 @@ return m}
 function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
 function head(t,x=''){return `<div class="top"><button class="btn ghost" id="bk">← 모델 변경</button><h2 class="grow">${t}</h2><span class="tag ok">${st.model.name}</span>${x}</div>`}
 function chat(){
-st.hist=[];
+st.hist=[];if(!st.maxUser)st.max=autoMax(st.model);
 app.innerHTML=head('대화','<button class="btn ghost" id="nw">새 대화</button><button class="btn ghost" id="gr">설정</button>')+`<div class="tkw"><div class="sub" id="tkn">토큰 계산 중…</div><div class="bar" style="height:5px;margin:4px 0 8px"><i id="tkb"></i></div></div><div id="set" class="card"><label class="sub">시스템 프롬프트</label><textarea id="sy" rows="2"></textarea>
-<label class="sub">최대 답변 길이(토큰)</label><input type="number" id="mx" min="64" max="2048" step="64"></div>
+<label class="sub">최대 답변 길이(토큰) · 기기에 맞춰 자동 설정됨</label><input type="number" id="mx" min="64" max="8192" step="64"></div>
 <div id="msgs"></div><div class="comp"><textarea id="in" rows="1" placeholder="메시지 입력 (Shift+Enter 줄바꿈)"></textarea><button class="circ" id="sd" title="전송">↑</button></div>`;
 $('#sy').value=st.sys;$('#mx').value=st.max;
 $('#bk').onclick=()=>pick('chat');$('#gr').onclick=()=>$('#set').classList.toggle('on');
-$('#sy').oninput=e=>{st.sys=e.target.value;clearTimeout(ct);ct=setTimeout(count,150)};$('#mx').onchange=e=>st.max=Math.min(2048,Math.max(64,+e.target.value||512));
+$('#sy').oninput=e=>{st.sys=e.target.value;clearTimeout(ct);ct=setTimeout(count,150)};$('#mx').onchange=e=>{st.maxUser=true;st.max=Math.min(8192,Math.max(64,+e.target.value||1024))};
 $('#nw').onclick=()=>{if(st.busy)stop();st.gen=(st.gen||0)+1;st.hist=[];$('#msgs').innerHTML='';count()};
 const send=()=>{if(st.busy)return stop();const t=$('#in').value.trim();if(!t)return;$('#in').value='';$('#in').style.height='auto';
 add('u',t);st.hist.push({role:'user',content:t});const el=mkA(),g=st.gen||0;let acc='';st.busy=true;$('#sd').textContent='■';
@@ -395,17 +424,17 @@ const w=st.worker;
 w.onmessage=({data:d})=>{
 if(d.type==='n')tk(d.n);
 else if(d.type==='tok'){acc+=d.t;paint(el,acc)}
-else if(d.type==='done'){fin(el);if(g===(st.gen||0))st.hist.push({role:'assistant',content:parse(acc).an}); // 생성 중 '새 대화'를 눌렀다면 이전 답변을 새 대화에 넣지 않음
+else if(d.type==='done'){fin(el);if(d.cut)el.insertAdjacentHTML('beforeend','<div class="sub" style="margin-top:6px">※ 최대 답변 길이에 도달해 잘렸습니다. \'계속\'이라고 보내거나 설정에서 길이를 늘려 주세요.</div>');if(g===(st.gen||0))st.hist.push({role:'assistant',content:parse(acc).an}); // 생성 중 '새 대화'를 눌렀다면 이전 답변을 새 대화에 넣지 않음
 end()}
 else if(d.type==='err'){el.querySelector('.ans').textContent='오류: '+errText(d.msg);if(/GPU 연결이 끊겼/.test(errText(d.msg))){st.hist.pop();$('#msgs').insertAdjacentHTML('beforeend','<div class="sub" style="text-align:center">GPU가 끊겨 이 모델은 다시 불러와야 합니다. 위의 \'← 모델 변경\'을 눌러 주세요.</div>')}end()}};
-w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,messages:[{role:'system',content:st.sys},...st.hist]})};
+w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,messages:[...sysM(),...st.hist]})};
 const end=()=>{st.busy=false;$('#sd').textContent='↑';st.worker.onmessage=idle;count()};
 const stop=()=>st.worker&&st.worker.postMessage({type:'stop'});
 $('#in').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px';clearTimeout(ct);ct=setTimeout(count,150)};$('#sd').onclick=send;st.worker.onmessage=idle;count();$('#in').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
 var ct;
 function idle({data:d}){if(d.type==='cnt')tk(d.n)}
 function tk(n){const c=st.model.ctx||4096,r=n/c;$('#tkn').textContent=`현재 사용 중 ${n.toLocaleString()} 토큰 / 기준 ${c.toLocaleString()}`;const b=$('#tkb');b.style.width=Math.min(100,r*100)+'%';b.style.background=r>.95?'var(--bad)':r>.8?'var(--warn)':'var(--ac)'}
-function count(){if(st.busy||!st.worker)return;st.worker.postMessage({type:'count',noThink:st.model.noThink,messages:[{role:'system',content:st.sys},...st.hist],draft:$('#in').value})}
+function count(){if(st.busy||!st.worker)return;st.worker.postMessage({type:'count',noThink:st.model.noThink,messages:[...sysM(),...st.hist],draft:$('#in').value})}
 function mkA(){const d=document.createElement('div');d.className='m a';d.innerHTML='<details class="th" hidden><summary></summary><div class="tb"></div></details><div class="ans">…</div>';$('#msgs').append(d);$('#msgs').scrollTop=1e9;return d}
 function parse(t){let th='',an=t,open=false,has=false;const b0=t.indexOf('<think>');
 if(b0>=0||st.model.think){has=true;const b=b0>=0?b0+7:0,e=t.indexOf('</think>',b);
