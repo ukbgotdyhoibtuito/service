@@ -122,14 +122,8 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
  .grid{gap:10px}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.bar.ind i{animation:none;width:100%;opacity:.4}}
-.pm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.pm button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--ln);border-radius:10px;background:none;cursor:pointer;transition:border-color .15s,background-color .15s}
-.pm button:hover{border-color:var(--ac)}
-.pm button.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,transparent)}
-.pm .pn{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.pm .pn i{font-style:normal;font-weight:500;font-size:11px;color:var(--ac);border:1px solid var(--ac);border-radius:99px;padding:0 6px}
-.pm .sub{font-size:12px}
-@media(max-width:520px){.pm{grid-template-columns:1fr}}
+.pmd{margin-top:6px}.pmd summary{cursor:pointer}
+@media(max-width:520px){.pmr .seg{width:100%}.pmr .seg button{flex:1;padding:8px 4px}}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -520,10 +514,9 @@ const PM_DESC=['쉬는 시간 없이 최대 속도로 돌려요. 큰 모델이�
 const pmNow=()=>{const h=st.hw||{},g=gapMs(st.model),tn={low:'낮음',mid:'보통',high:'높음'}[h.tier];
 return `이 기기${tn?`(성능 ${tn})`:''}${st.model?` · ${st.model.name}`:''} → ${st.pm===0?'제한 없음':g?`토큰·단계마다 약 ${g}ms 쉬어요`:'쉬는 시간이 거의 필요 없어요'}`};
 function pmUI(box){if(!box)return;
-box.innerHTML=`<div class="row"><b class="grow">🛡️ 과부하 방지</b><span class="sub">속도 ↔ 안정성</span></div>
-<div class="pm" role="group" aria-label="과부하 방지 단계">${PM_NAME.map((n,i)=>`<button data-v="${i}" aria-pressed="${st.pm===i}" class="${st.pm===i?'on':''}"><span class="pn">${n}${i===1?'<i>추천</i>':''}</span><span class="sub">${PM_SUB[i]}</span></button>`).join('')}</div>
-<div class="sub" style="margin-top:10px">${PM_DESC[st.pm]}</div><div class="sub" style="margin-top:4px;opacity:.8">${pmNow()}</div>
-<details class="sub" style="margin-top:6px"><summary style="cursor:pointer">자세히 보기</summary><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7"><li>대화와 이미지 생성에서 GPU 연산 사이에 쉬는 시간을 넣어요 (토큰·단계마다).</li><li>쉬는 시간은 기기 성능 등급과 모델 크기로 자동 계산돼요. 모델이 이 기기 권장 크기보다 클수록 길어져요.</li><li>배경 제거·자막 추출 같은 CPU 작업은 스레드 ${cpuThr()}개만 써요 (모델을 불러올 때 적용).</li><li>바꾼 설정은 다음 요청부터 적용돼요.</li></ul></details>`;
+box.innerHTML=`<div class="row pmr" style="flex-wrap:wrap;gap:8px 12px"><b class="grow">🛡️ 과부하 방지</b><div class="seg" role="group" aria-label="과부하 방지 단계">${PM_NAME.map((n,i)=>`<button data-v="${i}" aria-pressed="${st.pm===i}" class="${st.pm===i?'on':''}">${n}</button>`).join('')}</div></div>
+<details class="sub pmd"><summary>${PM_SUB[st.pm]}${st.pm===1?' (추천)':''} · 자세히</summary><div style="margin-top:6px">${PM_DESC[st.pm]}</div><div style="margin-top:4px;opacity:.8">${pmNow()}</div>
+<ul style="margin:6px 0 0;padding-left:18px;line-height:1.7"><li>대화와 이미지 생성에서 GPU 연산 사이에 쉬는 시간을 넣어요 (토큰·단계마다).</li><li>쉬는 시간은 기기 성능 등급과 모델 크기로 자동 계산돼요. 모델이 이 기기 권장 크기보다 클수록 길어져요.</li><li>배경 제거·자막 추출 같은 CPU 작업은 스레드 ${cpuThr()}개만 써요 (모델을 불러올 때 적용).</li><li>바꾼 설정은 다음 요청부터 적용돼요.</li></ul></details>`;
 box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{setPm(+b.dataset.v);pmUI(box);const t=$('#pmt');if(t)t.outerHTML=pmTag()})}
 const pmTag=()=>st.safe?`<span class="tag" id="pmt" title="${PM_DESC[st.pm]}">🛡️ ${PM_NAME[st.pm]}</span>`:'<span id="pmt"></span>';
 function head(t,x=''){return `<div class="top"><button class="btn ghost" id="bk">← 모델 변경</button><h2 class="grow">${t}</h2>${pmTag()}<span class="tag ok">${st.model.name}</span>${x}</div>`}
