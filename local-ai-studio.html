@@ -135,9 +135,8 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .hwn{margin:2px 0 0 19px}
 .hws{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--ln)}
 .hws>div{display:flex;flex-direction:column;gap:1px;min-width:0}.hws .sub{font-size:12px}.hws b{font-size:14px;font-weight:600;white-space:nowrap}
-.mt{display:flex;align-items:center;gap:3px;margin-top:3px}.mt i{width:16px;height:4px;border-radius:2px;background:var(--ln)}
+.lb{display:flex;align-items:center;gap:6px}.mt{display:flex;align-items:center;gap:2px}.mt i{width:8px;height:4px;border-radius:2px;background:var(--ln)}
 .mt.t1 i:nth-child(-n+1),.mt.t2 i:nth-child(-n+2),.mt.t3 i{background:var(--ok)}.mt.t1 i:nth-child(1){background:var(--warn)}
-.mt em{font-style:normal;font-size:11px;color:var(--sub);margin-left:3px}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -430,7 +429,7 @@ if(!st.hw)await detect();const h=st.hw;
 app.innerHTML=`<div class="row"><h1 class="grow"><span style="color:var(--ac)">✳</span> Local AI Studio</h1><button class="btn ghost" id="gs" title="설정" style="padding:5px 12px;font-size:13px;min-height:0;white-space:nowrap">⚙ 설정</button></div><div class="sub">모든 AI 처리는 이 컴퓨터 안에서 실행됩니다. 모델 다운로드 외에는 외부로 전송하지 않습니다.</div>
 <div class="card hw"><div class="row"><span class="dot ${h.ok?'':'bad'}"></span><b class="grow">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</b></div>
 <div class="sub hwn">${h.name}</div>
-${h.ok||h.mem?`<div class="hws">${h.ok?`<div><span class="sub">최대 버퍼</span><b>${h.buf.toFixed(1)}GB</b></div>`:''}${h.mem?`<div><span class="sub">메모리</span><b>약 ${h.mem}GB</b></div>`:''}${h.gf?`<div><span class="sub">연산 성능</span><b>${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'}</b><span class="mt t${{low:1,mid:2,high:3}[h.tier]}" title="성능 ${{low:'낮음',mid:'보통',high:'높음'}[h.tier]}"><i></i><i></i><i></i><em>${{low:'낮음',mid:'보통',high:'높음'}[h.tier]}</em></span></div>`:''}</div>`:''}
+${h.ok||h.mem?`<div class="hws">${h.ok?`<div><span class="sub">최대 버퍼</span><b>${h.buf.toFixed(1)}GB</b></div>`:''}${h.mem?`<div><span class="sub">메모리</span><b>약 ${h.mem}GB</b></div>`:''}${h.gf?`<div><span class="sub lb">연산 성능<span class="mt t${{low:1,mid:2,high:3}[h.tier]}" title="성능 ${{low:'낮음',mid:'보통',high:'높음'}[h.tier]}"><i></i><i></i><i></i></span></span><b>${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'}</b></div>`:''}</div>`:''}
 ${h.ok?'':'<div class="sub" style="margin-top:8px">최신 Chrome/Edge 데스크톱에서 열어 주세요. (이미지 처리는 WebGPU 없이도 가능)</div>'}</div>
 <h3 class="sec">모델 테스트</h3><div class="sub">모델을 직접 받아 대화·이미지 생성·이미지 처리를 시험해 보세요.</div>
 <div class="grid"><button class="card big" data-k="chat">💬<b>대화</b><span class="sub">로컬 언어 모델과 채팅</span></button>
