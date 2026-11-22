@@ -165,7 +165,7 @@ T=await import(d.lib===4?LIB4:LIB);eng=d.eng;
 const pc=p=>postMessage({type:'prog',p});
 if(eng==='chat'){
 tok=await T.AutoTokenizer.from_pretrained(d.repo,{progress_callback:pc});
-m=await (d.cls?T[d.cls]:T.AutoModelForCausalLM).from_pretrained(d.repo,{dtype:d.dtype,device:'webgpu',progress_callback:pc});
+m=await (d.cls?T[d.cls]:T.AutoModelForCausalLM).from_pretrained(d.repo,{dtype:(d.dtype==='q4f16'&&!d.f16?'q4':d.dtype),device:'webgpu',progress_callback:pc});
 await m.generate({...tok('hi'),max_new_tokens:1}); // 워밍업(GPU 초기화)
 }else if(eng==='janus'){
 proc=await T.AutoProcessor.from_pretrained(d.repo,{progress_callback:pc});
@@ -239,12 +239,11 @@ postMessage({type:'tres',mask:mk.data,w:mk.dims.at(-1),h:mk.dims.at(-2)});
 // cpu:true = WebGPU 없이 실행 / best:true = 해당 섹션(그룹)의 추천 표시 / grp = 섹션 안 소제목 / maxIn = 처리 모델 입력 긴 변 제한(px)
 const MODELS=[
 {id:'qwen3-06',kind:'chat',name:'Qwen3 0.6B',repo:'onnx-community/Qwen3-0.6B-ONNX',dtype:'q4f16',gb:0.5,minBuf:1,lang:'다국어(한국어 보통)',desc:'저사양·모바일용. 가볍고 빠른 기본 모델 (사고 모드 끔)',noThink:true,pri:1},
-{id:'qwen35-08',kind:'chat',cls:'Qwen3_5ForConditionalGeneration',name:'Qwen3.5 0.8B',repo:'onnx-community/Qwen3.5-0.8B-ONNX',dtype:{embed_tokens:'q4',vision_encoder:'fp16',decoder_model_merged:'q4'},gb:0.9,minBuf:1,lang:'다국어(한국어 양호)',desc:'저사양용 최신 세대. 0.6B급 크기에 더 나은 품질 (실험적)',noThink:true,pri:2},
+{id:'qwen35-08',kind:'chat',cls:'Qwen3_5ForConditionalGeneration',name:'Qwen3.5 0.8B',repo:'onnx-community/Qwen3.5-0.8B-ONNX-OPT',dtype:{embed_tokens:'q4',vision_encoder:'fp16',decoder_model_merged:'q4'},gb:0.9,minBuf:1,lang:'다국어(한국어 양호)',desc:'저사양용 최신 세대. 0.6B급 크기에 더 나은 품질',noThink:true,pri:2},
 {id:'gemma3-1',kind:'chat',name:'Gemma 3 1B IT',repo:'onnx-community/gemma-3-1b-it-ONNX',dtype:'q4',gb:0.8,minBuf:1,lang:'다국어(한국어 양호)',desc:'구글 소형 모델. 일반 사양의 한국어 대화용',pri:3},
 {id:'qwen3-17',kind:'chat',name:'Qwen3 1.7B',repo:'onnx-community/Qwen3-1.7B-ONNX',dtype:'q4f16',gb:1.3,minBuf:2,lang:'다국어(한국어 보통)',desc:'중간 사양용. 속도와 품질의 균형 (사고 모드 끔)',noThink:true,pri:4},
 {id:'qwen3-4',kind:'chat',name:'Qwen3 4B',repo:'onnx-community/Qwen3-4B-ONNX',dtype:'q4f16',gb:2.8,minBuf:2,lang:'다국어(한국어 양호)',desc:'고성능 GPU용. 검증된 큰 모델',noThink:true,pri:5},
-{id:'gemma4-e2b',kind:'chat',cls:'Gemma4ForConditionalGeneration',name:'Gemma 4 E2B',repo:'onnx-community/gemma-4-E2B-it-ONNX',dtype:{embed_tokens:'q4f16',decoder_model_merged:'q4f16',vision_encoder:'q4f16',audio_encoder:'q4f16'},gb:3.4,minBuf:2,lang:'다국어(한국어 양호)',desc:'고성능용 최신 구글 모델. 큰 다운로드 (실험적)',pri:6},
-{id:'qwen35-4',kind:'chat',cls:'Qwen3_5ForConditionalGeneration',name:'Qwen3.5 4B',repo:'onnx-community/Qwen3.5-4B-ONNX',dtype:{embed_tokens:'q4',vision_encoder:'fp16',decoder_model_merged:'q4'},gb:3.2,minBuf:2,lang:'다국어(한국어 양호)',desc:'가장 큰 대화 모델. 고성능 GPU 권장 (실험적)',noThink:true,pri:7},
+{id:'qwen35-4',kind:'chat',cls:'Qwen3_5ForConditionalGeneration',name:'Qwen3.5 4B',repo:'onnx-community/Qwen3.5-4B-ONNX-OPT',dtype:{embed_tokens:'q4',vision_encoder:'fp16',decoder_model_merged:'q4'},gb:3,minBuf:2,lang:'다국어(한국어 양호)',desc:'가장 큰 대화 모델. 고성능 GPU 권장 ',noThink:true,pri:6},
 // --- 텍스트 → 이미지 ---
 {id:'janus-pro',kind:'image',engine:'janus',name:'Janus-Pro 1B',repo:'onnx-community/Janus-Pro-1B-ONNX',gb:2.3,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 384×384. 생성에 수 분 걸릴 수 있음',best:true,pri:13},
 {id:'janus-13',kind:'image',engine:'janus',name:'Janus 1.3B',repo:'onnx-community/Janus-1.3B-ONNX',gb:2.6,minBuf:2,lang:'영어 프롬프트 권장',desc:'Janus 초기 버전. Pro보다 품질은 낮음',pri:14},
@@ -268,7 +267,7 @@ const TITLES={chat:'대화',image:'이미지 생성',tool:'이미지 처리',sub
 async function detect(){
 const h={ok:false,name:'WebGPU 미지원',buf:0,mem:navigator.deviceMemory||0};
 try{const a=navigator.gpu&&await navigator.gpu.requestAdapter();
-if(a){const i=a.info||{};h.ok=true;h.buf=a.limits.maxBufferSize/2**30;
+if(a){const i=a.info||{};h.ok=true;h.buf=a.limits.maxBufferSize/2**30;h.f16=a.features.has('shader-f16');
 h.name=[i.vendor,i.architecture,i.description].filter(Boolean).join(' ')||'GPU 감지됨'}}catch(e){}
 st.hw=h;
 }
@@ -309,7 +308,7 @@ if(kind==='chat'){
 // 사양별 자동 추천: 메모리·GPU 최대 버퍼·모바일 여부로 안정적으로 돌아갈 최대 크기를 정함
 const h=st.hw,mem=h.mem||4; // deviceMemory가 없으면 4GB로 가정
 const lim=isMobile?0.9:mem<=4?0.9:mem<8?1.5:h.buf>=4?3.5:2.8;
-const rec=[...states].filter(s=>s.f==='ok'&&s.m.gb<=lim&&!/실험적/.test(s.m.desc)).pop(); // 추천은 검증된 모델 중에서
+const rec=[...states].filter(s=>s.f==='ok'&&s.m.gb<=lim&&!s.m.exp).pop(); // exp 표시 모델은 추천에서 제외
 const mob=null;
 const r=(mob||rec)?.m.id;if(r)recIds=[r];
 }else recIds=states.filter(s=>s.f==='ok'&&s.m.best).map(s=>s.m.id);
@@ -375,7 +374,11 @@ r.querySelector('.fn').textContent=f.split('/').pop();$('#fl').append(r)}
 const fs=r.querySelector('.fs'),i=r.querySelector('i');
 if(p.status==='progress'&&p.total){const pc=Math.floor(p.loaded/p.total*100);i.style.width=pc+'%';fs.textContent=`${pc}% · ${(p.loaded/2**20).toFixed(1)}/${(p.total/2**20).toFixed(1)}MB`;r.classList.remove('dn')}
 else if(p.status==='done'){i.style.width='100%';fs.textContent='완료';r.classList.add('dn')}}
-function fail(msg){killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
+function errText(m){m=String(m||'');
+if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.\n(상세: '+m.slice(0,160)+')';
+if(/WebGPU|adapter|navigator\.gpu/i.test(m))return 'WebGPU를 사용할 수 없습니다. 최신 Chrome/Edge 데스크톱에서 열어 주세요.\n(상세: '+m.slice(0,160)+')';
+return m}
+function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
 function head(t,x=''){return `<div class="top"><button class="btn ghost" id="bk">← 모델 변경</button><h2 class="grow">${t}</h2><span class="tag ok">${st.model.name}</span>${x}</div>`}
 function chat(){
 st.hist=[];
@@ -394,7 +397,7 @@ if(d.type==='n')tk(d.n);
 else if(d.type==='tok'){acc+=d.t;paint(el,acc)}
 else if(d.type==='done'){fin(el);if(g===(st.gen||0))st.hist.push({role:'assistant',content:parse(acc).an}); // 생성 중 '새 대화'를 눌렀다면 이전 답변을 새 대화에 넣지 않음
 end()}
-else if(d.type==='err'){el.querySelector('.ans').textContent='오류: '+d.msg;end()}};
+else if(d.type==='err'){el.querySelector('.ans').textContent='오류: '+errText(d.msg);if(/GPU 연결이 끊겼/.test(errText(d.msg))){st.hist.pop();$('#msgs').insertAdjacentHTML('beforeend','<div class="sub" style="text-align:center">GPU가 끊겨 이 모델은 다시 불러와야 합니다. 위의 \'← 모델 변경\'을 눌러 주세요.</div>')}end()}};
 w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,messages:[{role:'system',content:st.sys},...st.hist]})};
 const end=()=>{st.busy=false;$('#sd').textContent='↑';st.worker.onmessage=idle;count()};
 const stop=()=>st.worker&&st.worker.postMessage({type:'stop'});
@@ -435,7 +438,7 @@ else if(d.type==='tok')out+=d.t;
 else if(d.type==='done'){w.terminate();st.tw=null;const r=out.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<\/?think>/g,'').trim().replace(/^["']+|["']+$/g,'');
 if(!r)return next();$('#pr').value=r;rel('번역 완료 · '+m.name)}
 else if(d.type==='err')next()};
-w.postMessage({type:'load',eng:'chat',repo:m.repo,dtype:m.dtype,cls:m.cls,lib:4})};
+w.postMessage({type:'load',eng:'chat',repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,lib:4})};
 $('#tr').onclick=async()=>{const t=$('#pr').value.trim();if(!t||st.busy)return;
 if(!/[가-힣]/.test(t)){$('#tm').textContent='한글이 없어 번역할 내용이 없습니다';return}
 const list=[];for(const id of ['qwen3-17','gemma3-1','qwen35-08','qwen3-06']){const x=MODELS.find(v=>v.id===id);if(x.gb<=1.5&&fit(x)==='ok'&&await cached(x))list.push(x)}
