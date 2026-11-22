@@ -419,7 +419,7 @@ return new Worker(u,{type:'module'})}
 async function home(){
 killWorker();st.kind=st.model=null;
 if(!st.hw)await detect();const h=st.hw;
-app.innerHTML=`<h1><span style="color:var(--ac)">✳</span> Local AI Studio</h1><div class="sub">모든 AI 처리는 이 컴퓨터 안에서 실행됩니다. 모델 다운로드 외에는 외부로 전송하지 않습니다.</div>
+app.innerHTML=`<div class="row"><h1 class="grow"><span style="color:var(--ac)">✳</span> Local AI Studio</h1><button class="btn ghost" id="gs" title="설정" style="padding:5px 12px;font-size:13px;min-height:0;white-space:nowrap">⚙ 설정</button></div><div class="sub">모든 AI 처리는 이 컴퓨터 안에서 실행됩니다. 모델 다운로드 외에는 외부로 전송하지 않습니다.</div>
 <div class="card" style="margin-top:16px"><span class="tag ${h.ok?'ok':'bad'}">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</span>
 <span class="sub">${h.name}${h.ok?` · 최대 버퍼 ${h.buf.toFixed(1)}GB`:''}${h.mem?` · 메모리 약 ${h.mem}GB`:''}${h.gf?` · 연산 성능 약 ${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'} (${{low:'낮음',mid:'보통',high:'높음'}[h.tier]})`:''}</span>
 ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크톱에서 열어 주세요. (이미지 처리는 WebGPU 없이도 가능)</div>'}</div>
@@ -428,11 +428,13 @@ ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크�
 <button class="card big" data-k="image">🎨<b>이미지 생성</b><span class="sub">텍스트로 이미지 만들기</span></button>
 <button class="card big" data-k="tool">🪄<b>이미지 처리</b><span class="sub">배경 제거 · 업스케일</span></button></div>
 <h3 class="sec">AI 도구</h3><div class="sub">목적에 맞는 모델을 도구 안에서 따로 받아, 내 컴퓨터에서 바로 작업해요.</div>
-<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>
-<h3 class="sec">설정</h3><div class="card" style="margin-top:12px" id="pmh"></div>`;
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
-pmUI($('#pmh'));
+$('#gs').onclick=settings;
 }
+function settings(){ // 설정 화면
+app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>설정</h2></div><div class="card" id="pmh"></div>`;
+$('#bk').onclick=home;pmUI($('#pmh'))}
 async function pick(kind){
 killWorker(); // 모델 선택 화면에 들어오면 실행 중인 모델을 바로 종료해 GPU 메모리 해제
 st.kind=kind;const list=MODELS.filter(m=>m.kind===kind).sort((a,b)=>a.pri-b.pri);
