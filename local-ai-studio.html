@@ -27,6 +27,7 @@ h1{font-size:22px;margin:8px 0 4px}h2{font-size:18px;margin:0}
 .big{cursor:pointer;text-align:left;font-size:16px}.big:hover,.model:hover{border-color:var(--ac)}.big b{font-size:19px;display:block;margin:6px 0 2px}
 .model{cursor:pointer;display:flex;flex-direction:column;gap:6px}.model.rec{border-color:var(--ac)}.model.no{opacity:.55}
 .gh{font-size:15px;margin:22px 0 0;color:var(--sub);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--ln);border-radius:99px;overflow:hidden}.seg button{background:none;border:0;color:var(--sub);padding:5px 14px;cursor:pointer;font:inherit;font-size:13px}.seg button.on{background:var(--ac);color:#fff}
 .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--ln);color:var(--sub);margin-right:4px}
 .tag.ok{color:var(--ok);border-color:var(--ok)}.tag.rec{color:var(--ac);border-color:var(--ac)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}
 .btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 16px;cursor:pointer}.btn.ghost{background:none;color:var(--tx);border:1px solid var(--ln)}.btn:disabled{opacity:.5;cursor:default}
@@ -269,13 +270,15 @@ const MODELS=[
 ];
 const $=(s,r=document)=>r.querySelector(s);const app=$('#app');
 const st={hw:null,kind:null,model:null,worker:null,tw:null,flt:new Set(),files:{},rows:{},hist:[],gal:[],tgal:[],busy:false,sys:'',max:1024,maxUser:false};
-st.safe=(()=>{try{return localStorage.getItem('lais_safe')!=='0'}catch(e){return true}})(); // 과부하 방지(기본 켜짐)
+st.pm=(()=>{try{const v=localStorage.getItem('lais_safe');return v==='0'?0:v==='2'?2:1}catch(e){return 1}})(); // 과부하 방지 단계: 0 끔 / 1 자동(기본) / 2 안전
+st.safe=st.pm>0;
+const setPm=v=>{st.pm=v;st.safe=v>0;try{localStorage.setItem('lais_safe',String(v))}catch(e){}};
 const cpuThr=()=>Math.max(1,(navigator.hardwareConcurrency||4)>>1); // 과부하 방지에서 CPU(wasm) 스레드는 절반만 사용
 // 토큰 사이 쉬는 시간(ms): 성능이 낮을수록 GPU를 쉬게 해서 발열·멈춤 방지
 const imgDuty=m=>Math.min(1,gapMs(m)/65); // 이미지 모델: 한 번 실행한 시간 대비 쉬는 비율(0~1)
 const gapMs=m=>{const h=st.hw||{};const base=isMobile?40:h.tier==='low'?40:h.tier==='mid'?12:h.tier==='high'?0:20;
 const over=m&&h.cap?Math.max(0,m.gb/h.cap-1):0; // 모델이 이 기기 권장 크기보다 클수록 더 천천히
-return Math.min(250,Math.round(Math.max(base,over>0?10:0)*(1+over*3)))};
+return Math.min(400,Math.round(Math.max(base,over>0?10:0)*(1+over*3)*(st.pm===2?2.2:1)))};
 const sysM=()=>st.sys.trim()?[{role:'system',content:st.sys}]:[];
 const isMobile=/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent)||(navigator.connection&&navigator.connection.type==='cellular');
 const fmt=g=>g<1?Math.round(g*1000)+'MB':g.toFixed(1)+'GB';
@@ -357,8 +360,7 @@ app.innerHTML=`<h1><span style="color:var(--ac)">✳</span> Local AI Studio</h1>
 <div class="card" style="margin-top:16px"><span class="tag ${h.ok?'ok':'bad'}">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</span>
 <span class="sub">${h.name}${h.ok?` · 최대 버퍼 ${h.buf.toFixed(1)}GB`:''}${h.mem?` · 메모리 약 ${h.mem}GB`:''}${h.gf?` · 연산 성능 약 ${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'} (${{low:'낮음',mid:'보통',high:'높음'}[h.tier]})`:''}</span>
 ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크톱에서 열어 주세요. (이미지 처리는 WebGPU 없이도 가능)</div>'}</div>
-<div class="card" style="margin-top:10px"><label class="row" style="cursor:pointer"><input type="checkbox" id="sf" ${st.safe?'checked':''}><b class="grow">🛡️ 과부하 방지</b></label>
-<div class="sub" id="sfi" style="margin-top:4px"></div></div>
+<div class="card" style="margin-top:10px" id="pmh"></div>
 <h3 class="sec">모델 테스트</h3><div class="sub">모델을 직접 받아 대화·이미지 생성·이미지 처리를 시험해 보세요.</div>
 <div class="grid"><button class="card big" data-k="chat">💬<b>대화</b><span class="sub">로컬 언어 모델과 채팅</span></button>
 <button class="card big" data-k="image">🎨<b>이미지 생성</b><span class="sub">텍스트로 이미지 만들기</span></button>
@@ -366,8 +368,7 @@ ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크�
 <h3 class="sec">로컬 모델 활용 툴</h3><div class="sub">내 컴퓨터의 로컬 모델로 실제 작업을 처리하는 도구예요.</div>
 <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
-const sfi=()=>{const g=gapMs();$('#sfi').textContent=`기기나 크롬이 멈추거나 꺼지지 않도록 속도를 조절해요. 답변을 만들 때 ${g?`토큰마다 약 ${g}ms씩 쉬어 GPU 부담을 줄이고(모델이 기기에 비해 클수록 더 오래 쉬어요)`:'토큰 사이 쉬는 시간은 이 기기 성능이 높아 거의 없고'}, CPU 처리는 스레드 ${cpuThr()}개만 써요. 그만큼 느려질 수 있어요.`};
-$('#sf').onchange=e=>{st.safe=e.target.checked;try{localStorage.setItem('lais_safe',st.safe?'1':'0')}catch(x){}sfi()};sfi();
+pmUI($('#pmh'));
 }
 async function pick(kind){
 killWorker(); // 모델 선택 화면에 들어오면 실행 중인 모델을 바로 종료해 GPU 메모리 해제
@@ -444,17 +445,29 @@ const fs=r.querySelector('.fs'),i=r.querySelector('i');
 if(p.status==='progress'&&p.total){const pc=Math.floor(p.loaded/p.total*100);i.style.width=pc+'%';fs.textContent=`${pc}% · ${(p.loaded/2**20).toFixed(1)}/${(p.total/2**20).toFixed(1)}MB`;r.classList.remove('dn')}
 else if(p.status==='done'){i.style.width='100%';fs.textContent='완료';r.classList.add('dn')}}
 function errText(m){m=String(m||'');
-if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.safe?'':' 홈 화면에서 ‘과부하 방지’를 켜면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
+if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.pm===2?'':' ‘과부하 방지’를 켜거나 ‘안전’ 단계로 올리면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
 if(/WebGPU|adapter|navigator\.gpu/i.test(m))return 'WebGPU를 사용할 수 없습니다. 최신 Chrome/Edge 데스크톱에서 열어 주세요.\n(상세: '+m.slice(0,160)+')';
 return m}
 function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
-function head(t,x=''){return `<div class="top"><button class="btn ghost" id="bk">← 모델 변경</button><h2 class="grow">${t}</h2><span class="tag ok">${st.model.name}</span>${x}</div>`}
+const PM_NAME=['끔','자동','안전'];
+const PM_DESC=['속도 조절 없이 최대 속도로 실행해요. 큰 모델이나 긴 작업에서 브라우저나 기기가 버벅이거나 멈출 수 있어요.',
+'기기 성능과 모델 크기에 맞춰 GPU에 쉬는 틈을 줘요. 가벼운 모델은 거의 그대로, 큰 모델은 조금 느려질 수 있어요.',
+'쉬는 시간을 두 배 넘게 늘려 가장 안정적으로 돌려요. 발열이 걱정되거나 자꾸 멈출 때 좋아요. 눈에 띄게 느려져요.'];
+const pmNow=()=>{const h=st.hw||{},g=gapMs(st.model),tn={low:'낮음',mid:'보통',high:'높음'}[h.tier];
+return `이 기기${tn?`(성능 ${tn})`:''}${st.model?` · ${st.model.name}`:''} → ${st.pm===0?'조절 없음':g?`토큰·단계마다 약 ${g}ms 쉬어요`:'쉬는 시간이 거의 필요 없어요'}`};
+function pmUI(box){if(!box)return;
+box.innerHTML=`<div class="row"><b class="grow">🛡️ 과부하 방지</b><div class="seg">${PM_NAME.map((n,i)=>`<button data-v="${i}" class="${st.pm===i?'on':''}">${n}</button>`).join('')}</div></div>
+<div class="sub" style="margin-top:8px">${PM_DESC[st.pm]}</div><div class="sub" style="margin-top:4px;opacity:.8">${pmNow()}</div>
+<details class="sub" style="margin-top:6px"><summary style="cursor:pointer">자세히 보기</summary><ul style="margin:6px 0 0;padding-left:18px;line-height:1.7"><li>대화와 이미지 생성에서 GPU 연산 사이에 쉬는 시간을 넣어요 (토큰·단계마다).</li><li>쉬는 시간은 기기 성능 등급과 모델 크기로 자동 계산돼요. 모델이 이 기기 권장 크기보다 클수록 길어져요.</li><li>배경 제거·자막 추출 같은 CPU 작업은 스레드 ${cpuThr()}개만 써요 (모델을 불러올 때 적용).</li><li>바꾼 설정은 다음 요청부터 적용돼요.</li></ul></details>`;
+box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{setPm(+b.dataset.v);pmUI(box);const t=$('#pmt');if(t)t.outerHTML=pmTag()})}
+const pmTag=()=>st.safe?`<span class="tag" id="pmt" title="${PM_DESC[st.pm]}">🛡️ ${PM_NAME[st.pm]}</span>`:'<span id="pmt"></span>';
+function head(t,x=''){return `<div class="top"><button class="btn ghost" id="bk">← 모델 변경</button><h2 class="grow">${t}</h2>${pmTag()}<span class="tag ok">${st.model.name}</span>${x}</div>`}
 function chat(){
 st.hist=[];if(!st.maxUser)st.max=autoMax(st.model);
-app.innerHTML=head('대화','<button class="btn ghost" id="nw">새 대화</button><button class="btn ghost" id="gr">설정</button>')+`<div class="tkw"><div class="sub" id="tkn">토큰 계산 중…</div><div class="bar" style="height:5px;margin:4px 0 8px"><i id="tkb"></i></div></div><div id="set" class="card"><label class="sub">시스템 프롬프트</label><textarea id="sy" rows="2"></textarea>
+app.innerHTML=head('대화','<button class="btn ghost" id="nw">새 대화</button><button class="btn ghost" id="gr">설정</button>')+`<div class="tkw"><div class="sub" id="tkn">토큰 계산 중…</div><div class="bar" style="height:5px;margin:4px 0 8px"><i id="tkb"></i></div></div><div id="set" class="card"><div id="pmc" style="margin-bottom:14px"></div><label class="sub">시스템 프롬프트</label><textarea id="sy" rows="2"></textarea>
 <label class="sub">최대 답변 길이(토큰) · 기기에 맞춰 자동 설정됨</label><input type="number" id="mx" min="64" max="8192" step="64"></div>
 <div id="msgs"></div><div class="comp"><textarea id="in" rows="1" placeholder="메시지 입력 (Shift+Enter 줄바꿈)"></textarea><button class="circ" id="sd" title="전송">↑</button></div>`;
-$('#sy').value=st.sys;$('#mx').value=st.max;
+$('#sy').value=st.sys;$('#mx').value=st.max;pmUI($('#pmc'));
 $('#bk').onclick=()=>pick('chat');$('#gr').onclick=()=>$('#set').classList.toggle('on');
 $('#sy').oninput=e=>{st.sys=e.target.value;clearTimeout(ct);ct=setTimeout(count,150)};$('#mx').onchange=e=>{st.maxUser=true;st.max=Math.min(8192,Math.max(64,+e.target.value||1024))};
 $('#nw').onclick=()=>{if(st.busy)stop();st.gen=(st.gen||0)+1;st.hist=[];$('#msgs').innerHTML='';count()};
