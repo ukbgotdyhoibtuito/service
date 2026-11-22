@@ -254,7 +254,6 @@ const MODELS=[
 // --- 텍스트 → 이미지 ---
 {id:'janus-pro',kind:'image',engine:'janus',name:'Janus-Pro 1B',repo:'onnx-community/Janus-Pro-1B-ONNX',gb:2.3,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 384×384. 생성에 수 분 걸릴 수 있음',best:true,pri:13},
 {id:'janus-13',kind:'image',engine:'janus',name:'Janus 1.3B',repo:'onnx-community/Janus-1.3B-ONNX',gb:2.6,minBuf:2,lang:'영어 프롬프트 권장',desc:'Janus 초기 버전. Pro보다 품질은 낮음',pri:14},
-{id:'z-image',kind:'image',engine:'link',href:'z-image-turbo/index.html',name:'Z-Image Turbo',repo:'webnn/Z-Image-Turbo',gb:6.8,minBuf:2,lang:'영어·중국어 프롬프트 권장',desc:'고성능 텍스트→이미지(6B). 약 7GB 다운로드, 전용 화면으로 열립니다 (Microsoft·Intel 공개 데모 기반, 고사양 GPU 권장)',pri:16},
 {id:'sd-turbo',kind:'image',engine:'sd',name:'SD-Turbo',repo:'schmuell/sd-turbo-ort-web',gb:2.5,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 512×512. 1단계 생성이라 빠름 (실험적)',pri:15},
 // --- 이미지 처리 (WebGPU 없이 CPU로 실행) ---
 {id:'rmbg',kind:'tool',engine:'bg',grp:'배경 제거',name:'RMBG-1.4',repo:'briaai/RMBG-1.4',cpu:true,gb:0.18,minBuf:0,maxIn:1024,desc:'범용 배경 제거. 사람·물건 모두 가능, 품질 우수',best:true,pri:16},
@@ -324,7 +323,7 @@ return false;
 async function removeModel(m){let n=0;
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
-function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.gb>=5&&((h.mem&&h.mem<8)||h.tier==='low'))return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
+function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
 function killWorker(){if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 function spawn(){const u=URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'}));
 return new Worker(u,{type:'module'})}
@@ -381,7 +380,6 @@ b.disabled=true;b.textContent='삭제 중…';await removeModel(m);pick(st.kind)
 $('#mg').querySelectorAll('.model').forEach(el=>el.onclick=()=>{const m=MODELS.find(x=>x.id===el.dataset.id);
 if(!st.hw.ok&&!m.cpu)return alert('WebGPU를 사용할 수 없어 실행할 수 없습니다.');
 if(fit(m)!=='ok'&&!confirm('이 컴퓨터에서는 실행이 어려울 수 있습니다. 계속할까요?'))return;
-if(m.engine==='link'){try{localStorage.setItem('lais_img_duty',String(st.safe?imgDuty(m):0))}catch(e){}if(!confirm(`'${m.name}'은(는) 전용 화면에서 실행됩니다. 처음에는 약 ${fmt(m.gb)}를 다운로드합니다. 이동할까요?`))return;location.href=m.href;return}
 load(m)})};bind();
 if($('#fb')){const upd=()=>{const n=st.flt.size;$('#fb').className='fbtn'+(n?' on':'');$('#fb').innerHTML='<span>⚲ 필터</span>'+(n?`<b>${n}</b>`:'');
 $('#fc').innerHTML=n?TAGS.filter(([k])=>st.flt.has(k)).map(([k,l])=>`<button class="fc" data-x="${k}">${l} ×</button>`).join(''):'<span class="sub">전체</span>';
