@@ -342,7 +342,8 @@ if(m.engine==='zimage'){try{const r=await navigator.storage.getDirectory();const
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
 function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.gb>=5&&((h.mem&&h.mem<8)||h.tier==='low'))return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
-let _wl=null;const wake=async on=>{try{if(on){if(!_wl&&navigator.wakeLock)_wl=await navigator.wakeLock.request('screen')}else if(_wl){const w=_wl;_wl=null;await w.release()}}catch(e){_wl=null}}; // 긴 작업 중 화면 꺼짐·절전 방지
+let _wl=null,_want=false;const wake=async on=>{_want=on;try{if(on){if(!_wl&&navigator.wakeLock&&document.visibilityState==='visible'){_wl=await navigator.wakeLock.request('screen');_wl.addEventListener('release',()=>{_wl=null})}}else if(_wl){const w=_wl;_wl=null;await w.release()}}catch(e){_wl=null}}; // 긴 작업 중 화면 꺼짐·절전 방지
+document.addEventListener('visibilitychange',()=>{if(_want&&document.visibilityState==='visible')wake(true)}); // 다른 앱 갔다 돌아오면 다시 잠금
 function killWorker(){wake(false);if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 // Z-Image Turbo: 공식 데모 페이지를 화면 밖 iframe으로 열고, Worker와 같은 인터페이스로 조종하는 어댑터
 class ZWorker{
@@ -429,7 +430,7 @@ $('#fp').querySelectorAll('[data-t]').forEach(c=>c.onchange=()=>{c.checked?st.fl
 async function load(m){
 const c=await cached(m);
 if(isMobile&&!c&&!confirm(`모바일 환경으로 보입니다. 약 ${fmt(m.gb)}를 다운로드합니다. 모바일 데이터 요금에 주의하세요. 계속할까요?`))return;
-st.model=m;st.files={};st.rows={};killWorker();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){} // 큰 모델 캐시가 자동 삭제되지 않게 요청
+st.model=m;st.files={};st.rows={};killWorker();wake(true);try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){} // 큰 모델 캐시가 자동 삭제되지 않게 요청
 
 app.innerHTML=`<div class="top"><h2>${m.name} 준비 중</h2></div><div class="card"><div id="ph">${c?'저장된 모델을 불러오는 중…':'다운로드 중…'}</div>
 <div class="bar" id="br"><i></i></div><div class="sub" id="pf">연결 중…</div><div class="fl" id="fl"></div><div class="row" style="margin-top:12px"><button class="btn ghost" id="cn">취소</button></div></div>`;
@@ -444,7 +445,7 @@ const v=Object.values(st.files),l=v.reduce((a,b)=>a+b.l,0),t=v.reduce((a,b)=>a+b
 $('#br').classList.remove('ind');$('#br i').style.width=(l/t*100)+'%';
 $('#pf').textContent=`${p.file.split('/').pop()} · 전체 ${(l/2**20).toFixed(0)} / ${(t/2**20).toFixed(0)}MB`}
 else if(p.status==='ready'||p.status==='done'){}}
-else if(d.type==='ready')m.kind==='chat'?chat():m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView();
+else if(d.type==='ready'){wake(false);m.kind==='chat'?chat():m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView()}
 else if(d.type==='err'){if(alt&&!tried){tried=1;w.terminate();st.files={};st.rows={};$('#fl').innerHTML='';$('#br i').style.width='0';$('#br').classList.add('ind');$('#ph').textContent='이전 버전 라이브러리로 다시 시도하는 중…';go(3)}else fail(d.msg)}
 };
 w.postMessage({type:'load',eng:m.engine||m.kind,repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,safe:st.safe,thr:cpuThr(),lib,dev:st.hw&&st.hw.ok?'webgpu':'wasm'});
