@@ -32,7 +32,7 @@ h1{font-size:22px;margin:8px 0 4px}h2{font-size:18px;margin:0}
 .tag.ok{color:var(--ok);border-color:var(--ok)}.tag.rec{color:var(--ac);border-color:var(--ac)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}
 .btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 16px;cursor:pointer}.btn.ghost{background:none;color:var(--tx);border:1px solid var(--ln)}.btn:disabled{opacity:.5;cursor:default}
 .bar{height:8px;background:var(--ln);border-radius:9px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}
-.bar.ind i{width:35%;animation:s 1.2s infinite ease-in-out}@keyframes s{0%{margin-left:-35%}100%{margin-left:100%}}
+.bar.ind i{width:35%;animation:s 1.2s infinite ease-in-out}@keyframes s{0%{transform:translateX(-100%)}100%{transform:translateX(286%)}}
 #msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:12px 0}
 .m{max-width:85%;padding:9px 13px;border-radius:12px;white-space:pre-wrap;word-break:break-word}.m.u{align-self:flex-end;background:var(--ac);color:#fff}.m.a{align-self:flex-start;background:var(--card);border:1px solid var(--ln)}
 textarea,input[type=text],input[type=number]{width:100%;background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:9px 12px}
@@ -81,6 +81,47 @@ input[type=checkbox]{accent-color:var(--ac);margin-right:6px}
 .pl{width:100%;max-height:300px;border-radius:10px;margin-top:10px;background:#000}audio.pl{background:none}
 @media(max-width:520px){.sg{grid-template-columns:1fr}}
 dialog{border:1px solid var(--ln);border-radius:12px;background:var(--card);color:var(--tx);max-width:420px}
+
+/* ===== 디자인 다듬기 (레이아웃 유지, 색·상태·터치 개선만. 그림자·블러 없음) ===== */
+:root{color-scheme:light dark;--rd:12px}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeSpeed}
+::selection{background:color-mix(in srgb,var(--ac) 28%,transparent)}
+#app{min-height:100vh;min-height:100dvh;padding-bottom:max(20px,env(safe-area-inset-bottom))}
+h1{font-weight:700;letter-spacing:-.02em}h2{font-weight:650;letter-spacing:-.01em}
+button,select,.fbtn,.fc,.drop,.model,.big{touch-action:manipulation}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,.model:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.card{transition:border-color .15s}
+.big,.model{transition:border-color .15s,background-color .15s}
+.big:hover,.model:hover{background:color-mix(in srgb,var(--ac) 4%,var(--card))}
+.big:active,.model:active{background:color-mix(in srgb,var(--ac) 9%,var(--card))}
+.model.rec{background:color-mix(in srgb,var(--ac) 5%,var(--card))}
+.model.no:hover{border-color:var(--ln);background:var(--card)}
+.tag{margin-bottom:4px;line-height:1.55}
+.btn{transition:opacity .15s,background-color .15s;font-weight:500}
+.btn:hover:not(:disabled){opacity:.9}.btn:active:not(:disabled){opacity:.8}
+.btn.ghost:hover:not(:disabled){background:color-mix(in srgb,var(--tx) 6%,transparent);opacity:1}
+.btn:disabled,.circ:disabled{cursor:not-allowed}
+.circ{transition:opacity .15s}.circ:active{opacity:.8}
+.seg button{transition:background-color .15s,color .15s}.seg button:hover:not(.on){color:var(--tx)}
+.m{line-height:1.6}.m.a{border-radius:4px 12px 12px 12px}.m.u{border-radius:12px 12px 4px 12px}
+.comp{transition:border-color .15s}
+.sub{line-height:1.55}
+#msgs,.fl,.tb{overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--ln) transparent}
+.gal img{transition:border-color .15s}.gal img:hover{border-color:var(--ac)}
+.ph{background:color-mix(in srgb,var(--tx) 2.5%,transparent)}
+.drop:hover,.drop.on{background:color-mix(in srgb,var(--ac) 6%,transparent)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+@media(max-width:600px){
+ #app{padding:14px 12px}
+ input,textarea,select{font-size:16px} /* iOS가 입력창을 확대하지 않게 */
+ .btn,.seg button,.fbtn{min-height:42px}
+ .circ{width:44px;height:44px}
+ .comp{bottom:max(12px,env(safe-area-inset-bottom))}
+ .m{max-width:92%}
+ .grid{gap:10px}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.bar.ind i{animation:none;width:100%;opacity:.4}}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
