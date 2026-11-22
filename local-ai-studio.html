@@ -123,7 +123,11 @@ async function loadSD(repo,pc){
  const vae=await mkS('vae_decoder/model.onnx','vae_decoder.onnx',{batch_size:1,num_channels_latent:4,height_latent:64,width_latent:64});
  sd={tk,te,unet,vae};
 }
-async function genSD(prompt){
+let duty=0; // SD: 단계 사이 쉬는 비율
+let mk=0;const rest=async()=>{if(duty)await new Promise(r=>setTimeout(r,(performance.now()-mk)*duty));mk=performance.now()};
+// Janus: 토큰 하나 만들 때마다 잠깐 쉬는 로짓 프로세서 (과부하 방지)
+let GapLP=null;
+async function genSD(prompt){mk=performance.now();
  const r=sd.tk(prompt,{truncation:true,max_length:77,return_tensor:false});
  let ids=r.input_ids;if(Array.isArray(ids[0]))ids=ids[0];ids=Array.from(ids,Number);
  if(ids.length>77){ids=ids.slice(0,77);ids[76]=49407}
@@ -131,6 +135,7 @@ async function genSD(prompt){
  const tin=sd.te.inputNames[0];let eo;
  try{eo=await sd.te.run({[tin]:new ort.Tensor('int32',Int32Array.from(ids),[1,77])})}
  catch(e){eo=await sd.te.run({[tin]:new ort.Tensor('int64',BigInt64Array.from(ids,BigInt),[1,77])})}
+ await rest();
  const hs=eo.last_hidden_state||Object.values(eo)[0];
  const fp16=hs.type==='float16';
  const T_=(a,dims)=>fp16?new ort.Tensor('float16',half(a),dims):new ort.Tensor('float32',a,dims);
@@ -144,7 +149,7 @@ async function genSD(prompt){
  let uo;
  try{uo=await sd.unet.run({[fs]:T_(inp,[1,4,64,64]),[ft]:new ort.Tensor('int64',BigInt64Array.from([999n]),[1]),[fh]:hs})}
  catch(e){uo=await sd.unet.run({[fs]:T_(inp,[1,4,64,64]),[ft]:T_(new Float32Array([999]),[1]),[fh]:hs})}
- const eps=f32(await (uo.out_sample||Object.values(uo)[0]).getData());
+ const eps=f32(await (uo.out_sample||Object.values(uo)[0]).getData());await rest();
  const pr=new Float32Array(n);
  for(let i=0;i<n;i++)pr[i]=(lat[i]-sig*eps[i])/0.18215;
  // VAE 입력 정밀도가 UNet과 다를 수 있어 실패하면 반대로 재시도
@@ -169,6 +174,7 @@ tok=await T.AutoTokenizer.from_pretrained(d.repo,{progress_callback:pc});
 m=await (d.cls?T[d.cls]:T.AutoModelForCausalLM).from_pretrained(d.repo,{dtype:(d.dtype==='q4f16'&&!d.f16?'q4':d.dtype),device:'webgpu',progress_callback:pc});
 await m.generate({...tok('hi'),max_new_tokens:1}); // 워밍업(GPU 초기화)
 }else if(eng==='janus'){
+GapLP=class extends T.LogitsProcessor{constructor(ms){super();this.ms=ms}_call(ids,logits){const t=performance.now()+this.ms;while(performance.now()<t){}return logits}};
 proc=await T.AutoProcessor.from_pretrained(d.repo,{progress_callback:pc});
 m=await T.MultiModalityCausalLM.from_pretrained(d.repo,{progress_callback:pc,
 dtype:{prepare_inputs_embeds:'q4',language_model:'q4f16',lm_head:'fp16',gen_head:'fp16',gen_img_embeds:'fp16',image_decode:'fp32'},
@@ -201,11 +207,11 @@ const ids=tok.apply_chat_template([...d.messages,...(d.draft?[{role:'user',conte
 postMessage({type:'cnt',n:ids.length});
 }else if(d.type==='stop'){stopper&&stopper.interrupt()}
 else if(d.type==='image'){
-if(eng==='sd'){await genSD(d.prompt)}
+duty=d.duty||0;if(eng==='sd'){await genSD(d.prompt)}
 else{
 const inp=await proc([{role:'<|User|>',content:d.prompt}],{chat_template:'text_to_image'});
 const n=proc.num_image_tokens;
-const out=await m.generate_images({...inp,min_new_tokens:n,max_new_tokens:n,do_sample:true});
+const out=await m.generate_images({...inp,min_new_tokens:n,max_new_tokens:n,do_sample:true,logits_processor:d.gap?[new GapLP(d.gap)]:undefined});
 postMessage({type:'img',blob:await out[0].toBlob()});
 }
 }else if(d.type==='asr'){ // 30초 단위로 나눠 인식하며 구간마다 결과 전달
@@ -248,6 +254,7 @@ const MODELS=[
 // --- 텍스트 → 이미지 ---
 {id:'janus-pro',kind:'image',engine:'janus',name:'Janus-Pro 1B',repo:'onnx-community/Janus-Pro-1B-ONNX',gb:2.3,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 384×384. 생성에 수 분 걸릴 수 있음',best:true,pri:13},
 {id:'janus-13',kind:'image',engine:'janus',name:'Janus 1.3B',repo:'onnx-community/Janus-1.3B-ONNX',gb:2.6,minBuf:2,lang:'영어 프롬프트 권장',desc:'Janus 초기 버전. Pro보다 품질은 낮음',pri:14},
+{id:'z-image',kind:'image',engine:'link',href:'z-image-turbo/index.html',name:'Z-Image Turbo',repo:'webnn/Z-Image-Turbo',gb:6.8,minBuf:2,lang:'영어·중국어 프롬프트 권장',desc:'고성능 텍스트→이미지(6B). 약 7GB 다운로드, 전용 화면으로 열립니다 (Microsoft·Intel 공개 데모 기반, 고사양 GPU 권장)',pri:16},
 {id:'sd-turbo',kind:'image',engine:'sd',name:'SD-Turbo',repo:'schmuell/sd-turbo-ort-web',gb:2.5,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 512×512. 1단계 생성이라 빠름 (실험적)',pri:15},
 // --- 이미지 처리 (WebGPU 없이 CPU로 실행) ---
 {id:'rmbg',kind:'tool',engine:'bg',grp:'배경 제거',name:'RMBG-1.4',repo:'briaai/RMBG-1.4',cpu:true,gb:0.18,minBuf:0,maxIn:1024,desc:'범용 배경 제거. 사람·물건 모두 가능, 품질 우수',best:true,pri:16},
@@ -265,6 +272,7 @@ const st={hw:null,kind:null,model:null,worker:null,tw:null,flt:new Set(),files:{
 st.safe=(()=>{try{return localStorage.getItem('lais_safe')!=='0'}catch(e){return true}})(); // 과부하 방지(기본 켜짐)
 const cpuThr=()=>Math.max(1,(navigator.hardwareConcurrency||4)>>1); // 과부하 방지에서 CPU(wasm) 스레드는 절반만 사용
 // 토큰 사이 쉬는 시간(ms): 성능이 낮을수록 GPU를 쉬게 해서 발열·멈춤 방지
+const imgDuty=m=>Math.min(1,gapMs(m)/65); // 이미지 모델: 한 번 실행한 시간 대비 쉬는 비율(0~1)
 const gapMs=m=>{const h=st.hw||{};const base=isMobile?40:h.tier==='low'?40:h.tier==='mid'?12:h.tier==='high'?0:20;
 const over=m&&h.cap?Math.max(0,m.gb/h.cap-1):0; // 모델이 이 기기 권장 크기보다 클수록 더 천천히
 return Math.min(250,Math.round(Math.max(base,over>0?10:0)*(1+over*3)))};
@@ -316,7 +324,7 @@ return false;
 async function removeModel(m){let n=0;
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
-function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
+function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.gb>=5&&((h.mem&&h.mem<8)||h.tier==='low'))return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
 function killWorker(){if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 function spawn(){const u=URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'}));
 return new Worker(u,{type:'module'})}
@@ -373,6 +381,7 @@ b.disabled=true;b.textContent='삭제 중…';await removeModel(m);pick(st.kind)
 $('#mg').querySelectorAll('.model').forEach(el=>el.onclick=()=>{const m=MODELS.find(x=>x.id===el.dataset.id);
 if(!st.hw.ok&&!m.cpu)return alert('WebGPU를 사용할 수 없어 실행할 수 없습니다.');
 if(fit(m)!=='ok'&&!confirm('이 컴퓨터에서는 실행이 어려울 수 있습니다. 계속할까요?'))return;
+if(m.engine==='link'){try{localStorage.setItem('lais_img_duty',String(st.safe?imgDuty(m):0))}catch(e){}if(!confirm(`'${m.name}'은(는) 전용 화면에서 실행됩니다. 처음에는 약 ${fmt(m.gb)}를 다운로드합니다. 이동할까요?`))return;location.href=m.href;return}
 load(m)})};bind();
 if($('#fb')){const upd=()=>{const n=st.flt.size;$('#fb').className='fbtn'+(n?' on':'');$('#fb').innerHTML='<span>⚲ 필터</span>'+(n?`<b>${n}</b>`:'');
 $('#fc').innerHTML=n?TAGS.filter(([k])=>st.flt.has(k)).map(([k,l])=>`<button class="fc" data-x="${k}">${l} ×</button>`).join(''):'<span class="sub">전체</span>';
@@ -491,7 +500,7 @@ const done=()=>{clearInterval(iv);st.busy=false;$('#go').disabled=false;$('#gb')
 st.worker.onmessage=({data:d})=>{
 if(d.type==='img'){const u=URL.createObjectURL(d.blob);st.gal.unshift(u);show(u);gal();$('#tm').textContent='완료';done()}
 else if(d.type==='err'){$('#tm').textContent='오류: '+d.msg;done()}};
-st.worker.postMessage({type:'image',prompt:p})};
+st.worker.postMessage({type:'image',prompt:p,gap:st.safe?gapMs(st.model):0,duty:st.safe?imgDuty(st.model):0})};
 }
 function subView(){
 app.innerHTML=head('자막 추출')+`<div class="card"><b>음성 / 영상 파일</b><div class="sub">mp3 · wav · m4a · mp4 · webm 등. 파일은 이 컴퓨터 밖으로 나가지 않습니다.</div>
