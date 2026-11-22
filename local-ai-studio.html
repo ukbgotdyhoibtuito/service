@@ -262,8 +262,8 @@ const MODELS=[
 ];
 const $=(s,r=document)=>r.querySelector(s);const app=$('#app');
 const st={hw:null,kind:null,model:null,worker:null,tw:null,flt:new Set(),files:{},rows:{},hist:[],gal:[],tgal:[],busy:false,sys:'',max:1024,maxUser:false};
-st.safe=(()=>{try{return localStorage.getItem('lais_safe')!=='0'}catch(e){return true}})(); // 기기 보호 모드(기본 켜짐)
-const cpuThr=()=>Math.max(1,(navigator.hardwareConcurrency||4)>>1); // 보호 모드에서 CPU(wasm) 스레드는 절반만 사용
+st.safe=(()=>{try{return localStorage.getItem('lais_safe')!=='0'}catch(e){return true}})(); // 과부하 방지(기본 켜짐)
+const cpuThr=()=>Math.max(1,(navigator.hardwareConcurrency||4)>>1); // 과부하 방지에서 CPU(wasm) 스레드는 절반만 사용
 // 토큰 사이 쉬는 시간(ms): 성능이 낮을수록 GPU를 쉬게 해서 발열·멈춤 방지
 const gapMs=m=>{const h=st.hw||{};const base=isMobile?40:h.tier==='low'?40:h.tier==='mid'?12:h.tier==='high'?0:20;
 const over=m&&h.cap?Math.max(0,m.gb/h.cap-1):0; // 모델이 이 기기 권장 크기보다 클수록 더 천천히
@@ -328,7 +328,7 @@ app.innerHTML=`<h1><span style="color:var(--ac)">✳</span> Local AI Studio</h1>
 <div class="card" style="margin-top:16px"><span class="tag ${h.ok?'ok':'bad'}">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</span>
 <span class="sub">${h.name}${h.ok?` · 최대 버퍼 ${h.buf.toFixed(1)}GB`:''}${h.mem?` · 메모리 약 ${h.mem}GB`:''}${h.gf?` · 연산 성능 약 ${h.gf>=1000?(h.gf/1000).toFixed(1)+' TFLOPS':Math.round(h.gf)+' GFLOPS'} (${{low:'낮음',mid:'보통',high:'높음'}[h.tier]})`:''}</span>
 ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크톱에서 열어 주세요. (이미지 처리는 WebGPU 없이도 가능)</div>'}</div>
-<div class="card" style="margin-top:10px"><label class="row" style="cursor:pointer"><input type="checkbox" id="sf" ${st.safe?'checked':''}><b class="grow">🛡 기기 보호 모드</b></label>
+<div class="card" style="margin-top:10px"><label class="row" style="cursor:pointer"><input type="checkbox" id="sf" ${st.safe?'checked':''}><b class="grow">🛡️ 과부하 방지</b></label>
 <div class="sub" id="sfi" style="margin-top:4px"></div></div>
 <h3 class="sec">모델 테스트</h3><div class="sub">모델을 직접 받아 대화·이미지 생성·이미지 처리를 시험해 보세요.</div>
 <div class="grid"><button class="card big" data-k="chat">💬<b>대화</b><span class="sub">로컬 언어 모델과 채팅</span></button>
@@ -337,7 +337,7 @@ ${h.ok?'':'<div class="sub" style="margin-top:6px">최신 Chrome/Edge 데스크�
 <h3 class="sec">로컬 모델 활용 툴</h3><div class="sub">내 컴퓨터의 로컬 모델로 실제 작업을 처리하는 도구예요.</div>
 <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
-const sfi=()=>{const g=gapMs();$('#sfi').textContent=st.safe?`켜짐 — 기기에 무리가 가지 않도록 속도를 조절합니다. 답변을 만들 때 토큰마다 ${g?`약 ${g}ms`:'(성능이 높아 거의 없이)'} 쉬어 GPU 부담과 발열을 줄이고(모델이 기기에 비해 클수록 더 천천히), CPU 처리는 스레드 ${cpuThr()}개만 사용합니다. 그만큼 느려집니다.`:'꺼짐 — 속도 조절 없이 최대 속도로 실행합니다. 큰 모델에서는 브라우저나 기기가 버벅이거나 멈출 수 있습니다.'};
+const sfi=()=>{const g=gapMs();$('#sfi').textContent=`기기나 크롬이 멈추거나 꺼지지 않도록 속도를 조절해요. 답변을 만들 때 ${g?`토큰마다 약 ${g}ms씩 쉬어 GPU 부담을 줄이고(모델이 기기에 비해 클수록 더 오래 쉬어요)`:'토큰 사이 쉬는 시간은 이 기기 성능이 높아 거의 없고'}, CPU 처리는 스레드 ${cpuThr()}개만 써요. 그만큼 느려질 수 있어요.`};
 $('#sf').onchange=e=>{st.safe=e.target.checked;try{localStorage.setItem('lais_safe',st.safe?'1':'0')}catch(x){}sfi()};sfi();
 }
 async function pick(kind){
@@ -415,7 +415,7 @@ const fs=r.querySelector('.fs'),i=r.querySelector('i');
 if(p.status==='progress'&&p.total){const pc=Math.floor(p.loaded/p.total*100);i.style.width=pc+'%';fs.textContent=`${pc}% · ${(p.loaded/2**20).toFixed(1)}/${(p.total/2**20).toFixed(1)}MB`;r.classList.remove('dn')}
 else if(p.status==='done'){i.style.width='100%';fs.textContent='완료';r.classList.add('dn')}}
 function errText(m){m=String(m||'');
-if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.safe?'':' 홈 화면에서 기기 보호 모드를 켜면 이런 상황을 줄일 수 있습니다.')+'\n(상세: '+m.slice(0,160)+')';
+if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.safe?'':' 홈 화면에서 ‘과부하 방지’를 켜면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
 if(/WebGPU|adapter|navigator\.gpu/i.test(m))return 'WebGPU를 사용할 수 없습니다. 최신 Chrome/Edge 데스크톱에서 열어 주세요.\n(상세: '+m.slice(0,160)+')';
 return m}
 function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
