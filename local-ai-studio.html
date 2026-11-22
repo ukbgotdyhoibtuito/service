@@ -254,6 +254,7 @@ const MODELS=[
 // --- 텍스트 → 이미지 ---
 {id:'janus-pro',kind:'image',engine:'janus',name:'Janus-Pro 1B',repo:'onnx-community/Janus-Pro-1B-ONNX',gb:2.3,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 384×384. 생성에 수 분 걸릴 수 있음',best:true,pri:13},
 {id:'janus-13',kind:'image',engine:'janus',name:'Janus 1.3B',repo:'onnx-community/Janus-1.3B-ONNX',gb:2.6,minBuf:2,lang:'영어 프롬프트 권장',desc:'Janus 초기 버전. Pro보다 품질은 낮음',pri:14},
+{id:'z-image',kind:'image',engine:'zimage',name:'Z-Image Turbo',repo:'webnn/Z-Image-Turbo',gb:6.8,minBuf:2,lang:'영어·중국어 프롬프트 권장',desc:'고성능 텍스트→이미지(6B, LLM 텍스트 인코더). 약 7GB 다운로드, 고사양 GPU 권장. 기기 성능에 따라 512 또는 1024 해상도 (Microsoft·Intel 공개 데모 엔진 사용)',pri:16},
 {id:'sd-turbo',kind:'image',engine:'sd',name:'SD-Turbo',repo:'schmuell/sd-turbo-ort-web',gb:2.5,minBuf:2,lang:'영어 프롬프트 권장',desc:'텍스트→이미지 512×512. 1단계 생성이라 빠름 (실험적)',pri:15},
 // --- 이미지 처리 (WebGPU 없이 CPU로 실행) ---
 {id:'rmbg',kind:'tool',engine:'bg',grp:'배경 제거',name:'RMBG-1.4',repo:'briaai/RMBG-1.4',cpu:true,gb:0.18,minBuf:0,maxIn:1024,desc:'범용 배경 제거. 사람·물건 모두 가능, 품질 우수',best:true,pri:16},
@@ -316,16 +317,37 @@ function autoMax(m){const h=st.hw||{};let n=h.tier==='low'?1024:h.tier==='mid'?2
 if(isMobile)n=Math.min(n,1024);if((h.mem||4)<8&&m.gb>1.5)n=Math.min(n,1024);if(m.gb>2.5&&h.tier!=='high')n=Math.min(n,1024);
 return Math.max(512,n)}
 async function cached(m){ // 브라우저 캐시에 모델 파일이 있는지 확인
+if(m.engine==='zimage'){try{const r=await navigator.storage.getDirectory();for await(const [n] of r.entries())if(n.startsWith('zimage-')&&n.includes('transformer_model'))return true}catch(e){}return false}
 try{for(const k of await caches.keys()){const c=await caches.open(k);
 if((await c.keys()).some(r=>r.url.includes('/'+m.repo+'/')))return true}}catch(e){}
 return false;
 }
 async function removeModel(m){let n=0;
+if(m.engine==='zimage'){try{const r=await navigator.storage.getDirectory();const a=[];for await(const [k] of r.entries())if(k.startsWith('zimage-'))a.push(k);for(const k of a){await r.removeEntry(k);n++}}catch(e){}return n}
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
-function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
+function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.gb>=5&&((h.mem&&h.mem<8)||h.tier==='low'))return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
 function killWorker(){if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
-function spawn(){const u=URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'}));
+// Z-Image Turbo: 공식 데모 페이지를 화면 밖 iframe으로 열고, Worker와 같은 인터페이스로 조종하는 어댑터
+class ZWorker{
+constructor(){this.onmessage=null;this.onerror=null;this.q=[];this.ready=false;
+const f=this.f=document.createElement('iframe');
+f.style.cssText='position:fixed;left:0;top:0;width:900px;height:700px;opacity:0;pointer-events:none;border:0;z-index:-1';
+f.src='z-image-turbo/index.html';
+this.h=e=>{if(e.source!==f.contentWindow||!e.data||!e.data.lais)return;const d=e.data,m=st.model||{};
+if(d.t==='hello'){this.ready=true;this.q.splice(0).forEach(x=>f.contentWindow.postMessage(x,location.origin))}
+else if(d.t==='p'){const tot=Math.round((m.gb||7)*2**30);this.emit({type:'prog',p:{status:'progress',file:'Z-Image Turbo 모델',loaded:Math.round(d.pct/100*tot),total:tot}})}
+else if(d.t==='loaded')this.emit({type:'ready'});
+else if(d.t==='img')d.nsfw?this.emit({type:'err',msg:'안전 필터가 부적절한 이미지로 판단해 표시하지 않았습니다. 프롬프트를 바꿔 다시 시도해 주세요.'}):this.emit({type:'img',blob:d.blob});
+else if(d.t==='err')this.emit({type:'err',msg:d.msg})};
+window.addEventListener('message',this.h);document.body.appendChild(f)}
+emit(d){this.onmessage&&this.onmessage({data:d})}
+send(x){this.ready?this.f.contentWindow.postMessage(x,location.origin):this.q.push(x)}
+postMessage(d){
+if(d.type==='load')this.send({lais:1,t:'load',res:st.hw&&st.hw.tier==='high'?1024:512});
+else if(d.type==='image'){try{localStorage.setItem('lais_img_duty',String(d.duty||0))}catch(e){}this.send({lais:1,t:'gen',prompt:d.prompt,steps:9})}}
+terminate(){window.removeEventListener('message',this.h);this.f.remove()}}
+function spawn(z){if(z&&st.model&&st.model.engine==='zimage')return new ZWorker();const u=URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'}));
 return new Worker(u,{type:'module'})}
 // ===== 화면 =====
 async function home(){
@@ -398,7 +420,7 @@ app.innerHTML=`<div class="top"><h2>${m.name} 준비 중</h2></div><div class="c
 <div class="bar" id="br"><i></i></div><div class="sub" id="pf">연결 중…</div><div class="fl" id="fl"></div><div class="row" style="margin-top:12px"><button class="btn ghost" id="cn">취소</button></div></div>`;
 $('#cn').onclick=()=>pick(m.kind);
 let tried=0;const alt=m.kind==='chat'&&!m.cls; // 대화 모델은 v4 라이브러리로 먼저 시도하고, 실패하면 v3로 한 번 재시도 (v4 전용 신형 모델은 재시도 없이 원래 오류를 표시)
-const go=lib=>{const w=st.worker=spawn();
+const go=lib=>{const w=st.worker=spawn(1);
 w.onerror=e=>fail('Worker 오류: '+(e.message||'불러오기 실패'));
 w.onmessage=({data:d})=>{
 if(d.type==='prog'){const p=d.p;frow(p);
