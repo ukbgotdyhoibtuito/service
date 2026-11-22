@@ -1,11 +1,20 @@
 import { AutoTokenizer, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js";
 
-env.localModelPath = "models/";
+// Resolve tokenizer files relative to this module so the app works from a sub-path
+// (for example, GitHub Pages at /service/z-image-turbo/).
+env.localModelPath = new URL("./models/", import.meta.url).href;
 env.allowRemoteModels = true;
 env.allowLocalModels = true;
 env.useBrowserCache = false;
-// Always use local/relative paths for tokenizers, as they are small enough to be hosted on GitHub Pages
-const tokenizer = await AutoTokenizer.from_pretrained("tokenizer");
+
+// Z-Image Turbo keeps its tokenizer files in the "tokenizer/" subfolder of the
+// official model repository. Transformers.js otherwise treats "tokenizer" as
+// a repository ID and requests the invalid URL /tokenizer/resolve/main/tokenizer.json.
+// Keep the model ID valid and add the upstream subfolder to the remote path.
+// Local copies, when present, should be placed in:
+// models/Tongyi-MAI/Z-Image-Turbo/{tokenizer.json, tokenizer_config.json, vocab.json, merges.txt}
+env.remotePathTemplate = "{model}/resolve/{revision}/tokenizer/";
+const tokenizer = await AutoTokenizer.from_pretrained("Tongyi-MAI/Z-Image-Turbo");
 
 /**
  * Extracts and prepares input IDs and attention masks for the text encoder from a given prompt.
