@@ -87,7 +87,15 @@ dialog{border:1px solid var(--ln);border-radius:12px;background:var(--card);colo
 const LIB='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1';
 const LIB4='https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2'; // 대화 모델용 (Gemma 3 등 v3에서 로딩이 중단되는 모델 대응)
 const ORT='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-let T,m,tok,proc,stopper,eng,ort,sd,pipe;
+let T,m,tok,proc,stopper,eng,ort,sd,pipe,LR,tdev='wasm';
+// 동기 대기: 교차 출처 격리 환경이면 Atomics.wait로 CPU를 쉬게 하고, 아니면 짧게 대기(스핀)
+let SL=null;try{if(self.crossOriginIsolated&&typeof SharedArrayBuffer!=='undefined')SL=new Int32Array(new SharedArrayBuffer(4))}catch(e){}
+const nap=ms=>{if(!(ms>0))return;if(SL){Atomics.wait(SL,0,0,ms);return}const t=performance.now()+ms;while(performance.now()<t){}};
+// RMBG 배경 제거: WebGPU가 되면 GPU로, 실패하면 CPU(wasm)로
+async function loadBG(dev,pc){tdev=dev;
+m=await T.AutoModel.from_pretrained(LR,{config:{model_type:'custom'},progress_callback:pc,...(dev==='webgpu'?{device:'webgpu',dtype:'fp32'}:{})});
+proc=await T.AutoProcessor.from_pretrained(LR,{progress_callback:pc,config:{do_normalize:true,do_pad:false,do_rescale:true,do_resize:true,image_mean:[0.5,0.5,0.5],feature_extractor_type:'ImageFeatureExtractor',image_std:[1,1,1],resample:2,rescale_factor:0.00392156862745098,size:{width:1024,height:1024}}})}
+const runBG=async im=>{const {pixel_values}=await proc(im);const {output}=await m({input:pixel_values});return output[0].mul(255).to('uint8')};
 
 // ----- SD-Turbo (onnxruntime-web 직접 실행) -----
 const half=f=>{const o=new Uint16Array(f.length),b=new Float32Array(1),u=new Uint32Array(b.buffer);
@@ -114,18 +122,24 @@ async function getBuf(url,label,pc){ // 큰 파일을 캐시에 저장하며 내
 async function loadSD(repo,pc){
  ort=await import(ORT+'ort.webgpu.min.mjs');
  ort.env.wasm.numThreads=1;ort.env.wasm.wasmPaths=ORT;
+ try{ort.env.webgpu.powerPreference='high-performance'}catch(e){} // 노트북은 내장 GPU 대신 외장 GPU 사용
  const tk=await T.AutoTokenizer.from_pretrained('Xenova/clip-vit-base-patch16',{progress_callback:pc});
  const base='https://huggingface.co/'+repo+'/resolve/main/';
  const mk=dims=>({executionProviders:['webgpu'],enableMemPattern:false,enableCpuMemArena:false,graphOptimizationLevel:'all',freeDimensionOverrides:dims,
   extra:{session:{disable_prepacking:'1',use_device_allocator_for_initializers:'1'}}});
- const mkS=async(path,label,dims)=>{const b=await getBuf(base+path,label,pc);return await ort.InferenceSession.create(new Uint8Array(b),mk(dims))};
- const te=await mkS('text_encoder/model.onnx','text_encoder.onnx',{batch_size:1});
- const unet=await mkS('unet/model.onnx','unet.onnx',{batch_size:1,num_channels:4,height:64,width:64,sequence_length:77});
- const vae=await mkS('vae_decoder/model.onnx','vae_decoder.onnx',{batch_size:1,num_channels_latent:4,height_latent:64,width_latent:64});
+ // 세 파일을 동시에 내려받고(첫 로딩 단축), 세션은 받는 순서대로 하나씩 만든다
+ const P=[['text_encoder/model.onnx','text_encoder.onnx'],['unet/model.onnx','unet.onnx'],['vae_decoder/model.onnx','vae_decoder.onnx']].map(([p,l])=>getBuf(base+p,l,pc));
+ P.forEach(p=>p.catch(()=>{}));
+ const mkS=async(i,dims)=>{const b=await P[i];P[i]=null;return await ort.InferenceSession.create(new Uint8Array(b),mk(dims))};
+ const te=await mkS(0,{batch_size:1});
+ const unet=await mkS(1,{batch_size:1,num_channels:4,height:64,width:64,sequence_length:77});
+ const vae=await mkS(2,{batch_size:1,num_channels_latent:4,height_latent:64,width_latent:64});
  sd={tk,te,unet,vae};
 }
 let duty=0; // SD: 단계 사이 쉬는 비율
 let mk=0;const rest=async()=>{if(duty)await new Promise(r=>setTimeout(r,(performance.now()-mk)*duty));mk=performance.now()};
+// 토큰 사이 쉬는 시간: 토큰 하나 만드는 시간의 35%를 넘지 않게 제한 (빠른 모델이 불필요하게 느려지지 않도록)
+let lt=0;const tokGap=g=>{const now=performance.now();nap(Math.min(g,lt?(now-lt)*.35:g));lt=performance.now()};
 // Janus: 토큰 하나 만들 때마다 잠깐 쉬는 로짓 프로세서 (과부하 방지)
 let GapLP=null;
 async function genSD(prompt){mk=performance.now();
@@ -167,7 +181,8 @@ async function genSD(prompt){mk=performance.now();
 onmessage=async({data:d})=>{
 try{
 if(d.type==='load'){
-T=await import(d.lib===4?LIB4:LIB);eng=d.eng;
+T=await import(d.lib===4?LIB4:LIB);eng=d.eng;LR=d.repo;
+try{T.env.backends.onnx.webgpu.powerPreference='high-performance'}catch(e){} // 외장 GPU 우선
 if(d.safe){try{T.env.backends.onnx.wasm.numThreads=d.thr}catch(e){}}
 const pc=p=>postMessage({type:'prog',p});
 if(eng==='chat'){
@@ -175,16 +190,15 @@ tok=await T.AutoTokenizer.from_pretrained(d.repo,{progress_callback:pc});
 m=await (d.cls?T[d.cls]:T.AutoModelForCausalLM).from_pretrained(d.repo,{dtype:(d.dtype==='q4f16'&&!d.f16?'q4':d.dtype),device:'webgpu',progress_callback:pc});
 await m.generate({...tok('hi'),max_new_tokens:1}); // 워밍업(GPU 초기화)
 }else if(eng==='janus'){
-GapLP=class extends T.LogitsProcessor{constructor(ms){super();this.ms=ms}_call(ids,logits){const t=performance.now()+this.ms;while(performance.now()<t){}return logits}};
+GapLP=class extends T.LogitsProcessor{constructor(ms){super();this.ms=ms}_call(ids,logits){tokGap(this.ms);return logits}};
 proc=await T.AutoProcessor.from_pretrained(d.repo,{progress_callback:pc});
 m=await T.MultiModalityCausalLM.from_pretrained(d.repo,{progress_callback:pc,
 dtype:{prepare_inputs_embeds:'q4',language_model:'q4f16',lm_head:'fp16',gen_head:'fp16',gen_img_embeds:'fp16',image_decode:'fp32'},
 device:{prepare_inputs_embeds:'wasm',language_model:'webgpu',lm_head:'webgpu',gen_head:'webgpu',gen_img_embeds:'webgpu',image_decode:'webgpu'}});
 }else if(eng==='sd'){
 await loadSD(d.repo,pc);
-}else if(eng==='bg'){ // RMBG-1.4
-m=await T.AutoModel.from_pretrained(d.repo,{config:{model_type:'custom'},progress_callback:pc});
-proc=await T.AutoProcessor.from_pretrained(d.repo,{progress_callback:pc,config:{do_normalize:true,do_pad:false,do_rescale:true,do_resize:true,image_mean:[0.5,0.5,0.5],feature_extractor_type:'ImageFeatureExtractor',image_std:[1,1,1],resample:2,rescale_factor:0.00392156862745098,size:{width:1024,height:1024}}});
+}else if(eng==='bg'){ // RMBG-1.4 (WebGPU 우선, 실패 시 CPU)
+if(d.dev==='webgpu'){try{await loadBG('webgpu',pc)}catch(e){await loadBG('wasm',pc)}}else await loadBG('wasm',pc);
 }else if(eng==='modnet'){
 m=await T.AutoModel.from_pretrained(d.repo,{progress_callback:pc});
 proc=await T.AutoProcessor.from_pretrained(d.repo,{progress_callback:pc});
@@ -200,7 +214,7 @@ postMessage({type:'ready'});
 stopper=new T.InterruptableStoppingCriteria();
 const inp=tok.apply_chat_template(d.messages,{add_generation_prompt:true,return_dict:true,...(d.noThink?{enable_thinking:false}:{})});
 const pl=inp.input_ids.dims.at(-1);let nn=0;postMessage({type:'n',n:pl});
-const st=new T.TextStreamer(tok,{skip_prompt:true,skip_special_tokens:true,callback_function:t=>postMessage({type:'tok',t}),token_callback_function:()=>{postMessage({type:'n',n:pl+(++nn)});if(d.gap){const t=performance.now()+d.gap;while(performance.now()<t){}}}});
+const st=new T.TextStreamer(tok,{skip_prompt:true,skip_special_tokens:true,callback_function:t=>postMessage({type:'tok',t}),token_callback_function:()=>{postMessage({type:'n',n:pl+(++nn)});if(d.gap)tokGap(d.gap)}});lt=0;
 await m.generate({...inp,max_new_tokens:d.max,do_sample:true,temperature:.7,top_p:.9,streamer:st,stopping_criteria:stopper});
 postMessage({type:'done',cut:nn>=d.max});
 }else if(d.type==='count'){
@@ -208,7 +222,7 @@ const ids=tok.apply_chat_template([...d.messages,...(d.draft?[{role:'user',conte
 postMessage({type:'cnt',n:ids.length});
 }else if(d.type==='stop'){stopper&&stopper.interrupt()}
 else if(d.type==='image'){
-duty=d.duty||0;if(eng==='sd'){await genSD(d.prompt)}
+duty=d.duty||0;lt=0;if(eng==='sd'){await genSD(d.prompt)}
 else{
 const inp=await proc([{role:'<|User|>',content:d.prompt}],{chat_template:'text_to_image'});
 const n=proc.num_image_tokens;
@@ -231,9 +245,9 @@ if(eng==='sr'){
 const o=await pipe(im),out=Array.isArray(o)?o[0]:o;
 postMessage({type:'tres',data:out.data,w:out.width,h:out.height,c:out.channels});
 }else{ // 배경 제거: 마스크만 돌려주고 합성은 화면 쪽에서
-const {pixel_values}=await proc(im);
-const {output}=await m({input:pixel_values});
-const mk=output[0].mul(255).to('uint8');
+let mk;
+if(eng==='bg'){try{mk=await runBG(im)}catch(e){if(tdev!=='webgpu')throw e;await loadBG('wasm',()=>{});mk=await runBG(im)}} // GPU 실행이 실패하면 CPU로 자동 전환
+else{const {pixel_values}=await proc(im);const {output}=await m({input:pixel_values});mk=output[0].mul(255).to('uint8')}
 postMessage({type:'tres',mask:mk.data,w:mk.dims.at(-1),h:mk.dims.at(-2)});
 }
 }
@@ -285,7 +299,7 @@ const fmt=g=>g<1?Math.round(g*1000)+'MB':g.toFixed(1)+'GB';
 const TITLES={chat:'대화',image:'이미지 생성',tool:'이미지 처리',sub:'자막 추출'};
 async function detect(){
 const h={ok:false,name:'WebGPU 미지원',buf:0,mem:navigator.deviceMemory||0};
-try{const a=navigator.gpu&&await navigator.gpu.requestAdapter();
+try{const a=navigator.gpu&&await navigator.gpu.requestAdapter({powerPreference:'high-performance'});
 if(a){const i=a.info||{};h.ok=true;h.buf=a.limits.maxBufferSize/2**30;h.f16=a.features.has('shader-f16');
 h.name=[i.vendor,i.architecture,i.description].filter(Boolean).join(' ')||'GPU 감지됨'}}catch(e){}
 if(h.ok)h.gf=await bench(h.name);
@@ -296,7 +310,7 @@ st.hw=h;
 // GPU 연산 성능을 약 0.1초 동안 실제로 측정(GFLOPS). 같은 GPU는 결과를 저장해 재사용
 async function bench(key){
 const ck='lais_gf_'+key;try{const c=+localStorage.getItem(ck);if(c>0)return c}catch(e){}
-try{const a=await navigator.gpu.requestAdapter(),d=await a.requestDevice();
+try{const a=await navigator.gpu.requestAdapter({powerPreference:'high-performance'}),d=await a.requestDevice();
 const mod=d.createShaderModule({code:`@group(0) @binding(0) var<storage,read_write> o:array<f32>;
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g:vec3<u32>){
 var x=vec4<f32>(f32(g.x)*0.001);for(var i=0u;i<4096u;i++){x=fma(x,vec4<f32>(0.999),vec4<f32>(0.001));}
@@ -319,18 +333,17 @@ return Math.min(memCap,perfCap)}
 function autoMax(m){const h=st.hw||{};let n=h.tier==='low'?1024:h.tier==='mid'?2048:h.tier==='high'?4096:1024;
 if(isMobile)n=Math.min(n,1024);if((h.mem||4)<8&&m.gb>1.5)n=Math.min(n,1024);if(m.gb>2.5&&h.tier!=='high')n=Math.min(n,1024);
 return Math.max(512,n)}
-async function cached(m){ // 브라우저 캐시에 모델 파일이 있는지 확인
+async function cacheUrls(){const a=[];try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())a.push(r.url)}}catch(e){}return a}
+async function cached(m,urls){ // 브라우저 캐시에 모델 파일이 있는지 확인 (urls: 미리 읽어 둔 캐시 목록, 모델 목록 화면에서 한 번만 읽음)
 if(m.engine==='zimage'){try{const r=await navigator.storage.getDirectory();for await(const [n] of r.entries())if(n.startsWith('zimage-')&&n.includes('transformer_model'))return true}catch(e){}return false}
-try{for(const k of await caches.keys()){const c=await caches.open(k);
-if((await c.keys()).some(r=>r.url.includes('/'+m.repo+'/')))return true}}catch(e){}
-return false;
-}
+return (urls||await cacheUrls()).some(u=>u.includes('/'+m.repo+'/'))}
 async function removeModel(m){let n=0;
 if(m.engine==='zimage'){try{const r=await navigator.storage.getDirectory();const a=[];for await(const [k] of r.entries())if(k.startsWith('zimage-'))a.push(k);for(const k of a){await r.removeEntry(k);n++}}catch(e){}return n}
 try{for(const k of await caches.keys()){const c=await caches.open(k);for(const r of await c.keys())if(r.url.includes('/'+m.repo+'/')){await c.delete(r);n++}}}catch(e){}
 return n}
 function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.gb>=5&&((h.mem&&h.mem<8)||h.tier==='low'))return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
-function killWorker(){if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
+let _wl=null;const wake=async on=>{try{if(on){if(!_wl&&navigator.wakeLock)_wl=await navigator.wakeLock.request('screen')}else if(_wl){const w=_wl;_wl=null;await w.release()}}catch(e){_wl=null}}; // 긴 작업 중 화면 꺼짐·절전 방지
+function killWorker(){wake(false);if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 // Z-Image Turbo: 공식 데모 페이지를 화면 밖 iframe으로 열고, Worker와 같은 인터페이스로 조종하는 어댑터
 class ZWorker{
 constructor(){this.onmessage=null;this.onerror=null;this.q=[];this.ready=false;
@@ -373,7 +386,7 @@ pmUI($('#pmh'));
 async function pick(kind){
 killWorker(); // 모델 선택 화면에 들어오면 실행 중인 모델을 바로 종료해 GPU 메모리 해제
 st.kind=kind;const list=MODELS.filter(m=>m.kind===kind).sort((a,b)=>a.pri-b.pri);
-const states=await Promise.all(list.map(async m=>({m,f:fit(m),c:await cached(m)})));
+const urls=await cacheUrls();const states=await Promise.all(list.map(async m=>({m,f:fit(m),c:await cached(m,urls)})));
 let recIds=[];
 if(kind==='chat'){
 // 사양별 자동 추천: 기기 상한(recCap)을 넘지 않는 모델 중 가장 큰 것
@@ -416,7 +429,8 @@ $('#fp').querySelectorAll('[data-t]').forEach(c=>c.onchange=()=>{c.checked?st.fl
 async function load(m){
 const c=await cached(m);
 if(isMobile&&!c&&!confirm(`모바일 환경으로 보입니다. 약 ${fmt(m.gb)}를 다운로드합니다. 모바일 데이터 요금에 주의하세요. 계속할까요?`))return;
-st.model=m;st.files={};st.rows={};killWorker();
+st.model=m;st.files={};st.rows={};killWorker();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){} // 큰 모델 캐시가 자동 삭제되지 않게 요청
+
 app.innerHTML=`<div class="top"><h2>${m.name} 준비 중</h2></div><div class="card"><div id="ph">${c?'저장된 모델을 불러오는 중…':'다운로드 중…'}</div>
 <div class="bar" id="br"><i></i></div><div class="sub" id="pf">연결 중…</div><div class="fl" id="fl"></div><div class="row" style="margin-top:12px"><button class="btn ghost" id="cn">취소</button></div></div>`;
 $('#cn').onclick=()=>pick(m.kind);
@@ -472,14 +486,15 @@ $('#bk').onclick=()=>pick('chat');$('#gr').onclick=()=>$('#set').classList.toggl
 $('#sy').oninput=e=>{st.sys=e.target.value;clearTimeout(ct);ct=setTimeout(count,150)};$('#mx').onchange=e=>{st.maxUser=true;st.max=Math.min(8192,Math.max(64,+e.target.value||1024))};
 $('#nw').onclick=()=>{if(st.busy)stop();st.gen=(st.gen||0)+1;st.hist=[];$('#msgs').innerHTML='';count()};
 const send=()=>{if(st.busy)return stop();const t=$('#in').value.trim();if(!t)return;$('#in').value='';$('#in').style.height='auto';
-add('u',t);st.hist.push({role:'user',content:t});const el=mkA(),g=st.gen||0;let acc='';st.busy=true;$('#sd').textContent='■';
+add('u',t);st.hist.push({role:'user',content:t});const el=mkA(),g=st.gen||0;let acc='',nn=0,rq=0;st.busy=true;$('#sd').textContent='■';
+const flush=()=>{rq=0;paint(el,acc);if(nn)tk(nn)},sched=()=>{if(!rq)rq=requestAnimationFrame(flush)}; // 토큰마다 화면을 그리지 않고 프레임당 한 번만 갱신
 const w=st.worker;
 w.onmessage=({data:d})=>{
-if(d.type==='n')tk(d.n);
-else if(d.type==='tok'){acc+=d.t;paint(el,acc)}
-else if(d.type==='done'){fin(el);if(d.cut)el.insertAdjacentHTML('beforeend','<div class="sub" style="margin-top:6px">※ 최대 답변 길이에 도달해 잘렸습니다. \'계속\'이라고 보내거나 설정에서 길이를 늘려 주세요.</div>');if(g===(st.gen||0))st.hist.push({role:'assistant',content:parse(acc).an}); // 생성 중 '새 대화'를 눌렀다면 이전 답변을 새 대화에 넣지 않음
+if(d.type==='n'){nn=d.n;sched()}
+else if(d.type==='tok'){acc+=d.t;sched()}
+else if(d.type==='done'){cancelAnimationFrame(rq);flush();fin(el);if(d.cut)el.insertAdjacentHTML('beforeend','<div class="sub" style="margin-top:6px">※ 최대 답변 길이에 도달해 잘렸습니다. \'계속\'이라고 보내거나 설정에서 길이를 늘려 주세요.</div>');if(g===(st.gen||0))st.hist.push({role:'assistant',content:parse(acc).an}); // 생성 중 '새 대화'를 눌렀다면 이전 답변을 새 대화에 넣지 않음
 end()}
-else if(d.type==='err'){el.querySelector('.ans').textContent='오류: '+errText(d.msg);if(/GPU 연결이 끊겼/.test(errText(d.msg))){st.hist.pop();$('#msgs').insertAdjacentHTML('beforeend','<div class="sub" style="text-align:center">GPU가 끊겨 이 모델은 다시 불러와야 합니다. 위의 \'← 모델 변경\'을 눌러 주세요.</div>')}end()}};
+else if(d.type==='err'){cancelAnimationFrame(rq);el.querySelector('.ans').textContent='오류: '+errText(d.msg);if(/GPU 연결이 끊겼/.test(errText(d.msg))){st.hist.pop();$('#msgs').insertAdjacentHTML('beforeend','<div class="sub" style="text-align:center">GPU가 끊겨 이 모델은 다시 불러와야 합니다. 위의 \'← 모델 변경\'을 눌러 주세요.</div>')}end()}};
 w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,gap:st.safe?gapMs(st.model):0,messages:[...sysM(),...st.hist]})};
 const end=()=>{st.busy=false;$('#sd').textContent='↑';st.worker.onmessage=idle;count()};
 const stop=()=>st.worker&&st.worker.postMessage({type:'stop'});
@@ -527,9 +542,9 @@ const list=[];for(const id of ['qwen3-17','gemma3-1','qwen35-08','qwen3-06']){co
 if(!list.length)return alert('번역에 쓸 수 있는 다운로드된 대화 모델이 없습니다. 대화 모델(예: Qwen3 0.6B)을 먼저 받아 주세요.');
 st.busy=true;$('#go').disabled=$('#tr').disabled=true;tryTr(list,0,t)};
 $('#sv').onclick=()=>{const a=document.createElement('a');a.href=$('#out').src;a.download='image-'+Date.now()+'.png';a.click()};
-$('#go').onclick=()=>{const p=$('#pr').value.trim();if(!p||st.busy)return;st.busy=true;$('#go').disabled=true;$('#gb').style.display='block';
+$('#go').onclick=()=>{const p=$('#pr').value.trim();if(!p||st.busy)return;st.busy=true;wake(true);$('#go').disabled=true;$('#gb').style.display='block';
 const t0=Date.now(),iv=setInterval(()=>$('#tm').textContent='생성 중… '+Math.round((Date.now()-t0)/1000)+'초',1000);
-const done=()=>{clearInterval(iv);st.busy=false;$('#go').disabled=false;$('#gb').style.display='none'};
+const done=()=>{clearInterval(iv);wake(false);st.busy=false;$('#go').disabled=false;$('#gb').style.display='none'};
 st.worker.onmessage=({data:d})=>{
 if(d.type==='img'){const u=URL.createObjectURL(d.blob);st.gal.unshift(u);show(u);gal();$('#tm').textContent='완료';done()}
 else if(d.type==='err'){$('#tm').textContent='오류: '+d.msg;done()}};
@@ -575,9 +590,9 @@ $('#d1').onclick=()=>dl(name+'.srt',SRT(),'application/x-subrip');
 $('#d2').onclick=()=>dl(name+'.vtt',VTT(),'text/vtt');
 $('#d3').onclick=()=>dl(name+'_timetable.txt',TBL(),'text/plain');
 $('#d4').onclick=async()=>{try{await navigator.clipboard.writeText(TBL());$('#tm').textContent='타임테이블을 복사했어요'}catch(e){$('#tm').textContent='복사에 실패했어요. TXT로 저장해 주세요'}};
-$('#go').onclick=async()=>{if(!file||st.busy)return;st.busy=true;$('#go').disabled=true;$('#gb').style.display='block';$('#gb i').style.width='0';
+$('#go').onclick=async()=>{if(!file||st.busy)return;st.busy=true;wake(true);$('#go').disabled=true;$('#gb').style.display='block';$('#gb i').style.width='0';
 segs=[];$('#sl').innerHTML='';$('#rs').style.display='none';
-const done=m=>{st.busy=false;$('#go').disabled=false;$('#gb').style.display='none';$('#tm').textContent=m};
+const done=m=>{wake(false);st.busy=false;$('#go').disabled=false;$('#gb').style.display='none';$('#tm').textContent=m};
 try{$('#tm').textContent='오디오 읽는 중…';const a=await dec(file),dur=a.length/16000,buf=a.slice().buffer;
 st.worker.onmessage=({data:d})=>{
 if(d.type==='aseg'){$('#gb i').style.width=((d.i+1)/d.n*100)+'%';$('#tm').textContent=`음성 인식 중… ${d.i+1} / ${d.n} 구간`;
