@@ -53,6 +53,8 @@ let loading;
 let modelsLoaded = false;
 
 const config = getConfig();
+// Safety checking is intentionally disabled: do not download or run the safety-checker models.
+config.safetyChecker = false;
 let numInferenceSteps = 9;
 let timesteps = null;
 const dataType = "float16";
