@@ -123,6 +123,13 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.bar.ind i{animation:none;width:100%;opacity:.4}}
 .lnk{background:none;border:0;cursor:pointer;color:var(--sub);font-size:12px;padding:6px 10px;opacity:.65;text-decoration:underline;text-underline-offset:3px}.lnk:hover{opacity:1;color:var(--tx)}
+.ag{display:flex;gap:14px;height:calc(100vh - 40px);height:calc(100dvh - 40px)}
+.as{width:230px;flex:none;display:flex;flex-direction:column;gap:8px;border-right:1px solid var(--ln);padding-right:12px;min-height:0}
+.cl{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
+.ci{display:flex;align-items:center;gap:4px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}.ci:hover,.ci.on{background:color-mix(in srgb,var(--ac) 10%,transparent)}
+.ci span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci button{background:none;border:0;color:var(--sub);cursor:pointer;opacity:0;padding:0 4px}.ci:hover button{opacity:1}
+.am{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}#mb{display:none}
+@media(max-width:700px){.ag{gap:0}.as{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:20;padding:16px 12px;transform:translateX(-105%);transition:transform .2s}.as.on{transform:none;border-right:1px solid var(--ln)}#mb{display:inline-block}.ci button{opacity:1}}
 .tl{align-self:flex-start;max-width:92%;font-size:12.5px;color:var(--sub);border-left:2px solid var(--ln);padding:2px 10px;white-space:pre-wrap;word-break:break-word}
 .pm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .pm button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--ln);border-radius:10px;background:none;cursor:pointer;transition:border-color .15s,background-color .15s}
@@ -402,7 +409,7 @@ return n}
 function fit(m){if(m.cpu)return 'ok';const h=st.hw;if(!h.ok)return 'no';if(h.buf<m.minBuf)return 'low';if(m.gb>=5&&((h.mem&&h.mem<8)||h.tier==='low'))return 'low';if(m.kind==='chat'&&m.gb>h.cap*1.25)return 'low';return 'ok'}
 let _wl=null,_want=false;const wake=async on=>{_want=on;try{if(on){if(!_wl&&navigator.wakeLock&&document.visibilityState==='visible'){_wl=await navigator.wakeLock.request('screen');_wl.addEventListener('release',()=>{_wl=null})}}else if(_wl){const w=_wl;_wl=null;await w.release()}}catch(e){_wl=null}}; // 긴 작업 중 화면 꺼짐·절전 방지
 document.addEventListener('visibilitychange',()=>{if(_want&&document.visibilityState==='visible')wake(true)}); // 다른 앱 갔다 돌아오면 다시 잠금
-function killWorker(){wake(false);if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
+function killWorker(){if(window.agClean)window.agClean();wake(false);if(st.worker){st.worker.terminate();st.worker=null}if(st.tw){st.tw.terminate();st.tw=null}st.busy=false}
 // Z-Image Turbo: 공식 데모 페이지를 화면 밖 iframe으로 열고, Worker와 같은 인터페이스로 조종하는 어댑터
 class ZWorker{
 constructor(){this.onmessage=null;this.onerror=null;this.q=[];this.ready=false;
@@ -426,7 +433,7 @@ function spawn(z){if(z&&st.model&&st.model.engine==='zimage')return new ZWorker(
 return new Worker(u,{type:'module'})}
 // ===== 화면 =====
 async function home(){
-killWorker();st.kind=st.model=null;st.agent=false;
+killWorker();st.kind=st.model=null;
 if(!st.hw)await detect();const h=st.hw;
 app.innerHTML=`<div class="row"><h1 class="grow"><span style="color:var(--ac)">✳</span> Local AI Studio</h1><button class="btn ghost" id="gs" title="설정" style="padding:5px 12px;font-size:13px;min-height:0;white-space:nowrap">⚙ 설정</button></div><div class="sub">모든 AI 처리는 이 컴퓨터 안에서 실행됩니다. 모델 다운로드 외에는 외부로 전송하지 않습니다.</div>
 <div class="card hw"><div class="row"><span class="dot ${h.ok?'':'bad'}"></span><b class="grow">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</b></div>
@@ -442,7 +449,7 @@ ${h.ok?'':'<div class="sub" style="margin-top:8px">최신 Chrome/Edge 데스크�
 <div style="margin-top:auto;padding-top:28px;text-align:center"><button class="lnk" id="ag" title="도구를 쓰는 실험 기능">🧪 에이전트 모드 (실험)</button></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
 $('#gs').onclick=settings;
-$('#ag').onclick=()=>{st.agent=true;pick('chat')};
+$('#ag').onclick=async()=>{if(!st.hw)await detect();agent()};
 }
 function settings(){ // 설정 화면
 app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>설정</h2></div><div class="card" id="pmh"></div>`;
@@ -472,7 +479,7 @@ const mkBody=()=>{const sel=kind==='chat'?[...st.flt]:[],vis=states.filter(s=>se
 if(!vis.length)return '<div class="sub" style="margin-top:12px">조건에 맞는 모델이 없습니다.</div>';
 return groups.map(g=>{const a=vis.filter(s=>(s.m.grp||'')===g);return a.length?(g?`<h3 class="gh">${g}</h3>`:'')+`<div class="grid">${a.map(cardH).join('')}</div>`:''}).join('')};
 const fbar=kind==='chat'?`<div class="fwrap"><button class="fbtn" id="fb"></button><span id="fc" style="display:contents"></span><div class="fpop" id="fp" style="display:none"><label><input type="checkbox" id="fall">전체</label><hr>${TAGS.map(([k,l])=>`<label><input type="checkbox" data-t="${k}">${l}</label>`).join('')}</div></div>`:'';
-app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>${st.agent&&kind==='chat'?'에이전트':TITLES[kind]} 모델 선택</h2></div>${fbar}${st.agent&&kind==='chat'?'<div class="sub" style="margin-top:8px">🧪 도구를 부르려면 어느 정도 똑똑한 모델이 필요해요. Qwen3 1.7B 이상을 추천해요.</div>':''}<div id="mg">${mkBody()}</div>`;
+app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>${TITLES[kind]} 모델 선택</h2></div>${fbar}<div id="mg">${mkBody()}</div>`;
 $('#bk').onclick=home;
 const bind=()=>{$('#mg').querySelectorAll('.del').forEach(b=>b.onclick=async e=>{e.stopPropagation();const m=MODELS.find(x=>x.id===b.dataset.id);
 if(!confirm(`'${m.name}' 모델을 삭제할까요?\n저장된 파일(약 ${fmt(m.gb)})이 이 브라우저에서 지워지며, 다시 사용하려면 재다운로드해야 합니다.`))return;
@@ -508,7 +515,7 @@ const v=Object.values(st.files),l=v.reduce((a,b)=>a+b.l,0),t=v.reduce((a,b)=>a+b
 $('#br').classList.remove('ind');$('#br i').style.width=(l/t*100)+'%';
 $('#pf').textContent=`${p.file.split('/').pop()} · 전체 ${(l/2**20).toFixed(0)} / ${(t/2**20).toFixed(0)}MB`}
 else if(p.status==='ready'||p.status==='done'){}}
-else if(d.type==='ready'){wake(false);m.kind==='chat'?(st.agent?agent():chat()):m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView()}
+else if(d.type==='ready'){wake(false);m.kind==='chat'?chat():m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView()}
 else if(d.type==='err'){if(alt&&!tried){tried=1;w.terminate();st.files={};st.rows={};$('#fl').innerHTML='';$('#br i').style.width='0';$('#br').classList.add('ind');$('#ph').textContent='이전 버전 라이브러리로 다시 시도하는 중…';go(3)}else fail(d.msg)}
 };
 w.postMessage({type:'load',eng:m.engine||m.kind,repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,safe:st.safe,thr:cpuThr(),lib,dev:st.hw&&st.hw.ok?'webgpu':'wasm'});
@@ -581,56 +588,187 @@ el.lastChild.textContent=r.an||(r.open?'':'…');$('#msgs').scrollTop=1e9}
 function fin(el){const dt=el.firstChild;dt.classList.remove('on');if(dt.firstChild.textContent==='생각 중…')dt.firstChild.textContent='생각 과정'}
 function add(c,t){const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('#msgs').append(d);$('#msgs').scrollTop=1e9;return d}
 }
-// ===== 에이전트 모드 (실험): 로컬 대화 모델이 도구를 골라 쓰며 일을 처리 =====
+// ===== 에이전트 모드 (실험): 채팅 목록 + 대화창, 받아 둔 모델을 오가며 쓰고, 사이트의 모든 모델 종류를 도구로 사용 =====
 function agent(){
-if(!st.maxUser)st.max=autoMax(st.model);
-const NK='lais_notes',notes=()=>{try{return JSON.parse(localStorage.getItem(NK)||'[]')}catch(e){return[]}};
+killWorker();st.kind=st.model=null;
+const AGK='lais_agent_v1',ATT={},W={c:null,cm:null,x:null,xm:null}; // W.c/cm: 대화 모델 워커·모델, W.x/xm: 보조(이미지·처리·자막) 워커·모델
+let S;try{S=JSON.parse(localStorage.getItem(AGK)||'null')}catch(e){}
+if(!S||!Array.isArray(S.chats))S={chats:[],cur:null,model:null};
+let chat=S.chats.find(c=>c.id===S.cur),busy=false,stopped=false,pend=[];
+const save=()=>{try{S.chats=S.chats.slice(0,40);localStorage.setItem(AGK,JSON.stringify(S))}catch(e){}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+window.agClean=()=>{for(const k of ['c','x']){if(W[k]){try{W[k].terminate()}catch(e){}W[k]=null;W[k+'m']=null}}busy=false;wake(false);app.style.maxWidth='';window.agClean=null};
+app.style.maxWidth='1100px';
+// ---------- 화면 ----------
+app.innerHTML=`<div class="ag"><aside class="as" id="as"><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="ho">← 처음으로</button></aside>
+<section class="am"><div class="top" style="margin-bottom:6px"><button class="btn ghost" id="mb" aria-label="채팅 목록">☰</button><b class="grow" id="ct" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">새 채팅</b><span class="tag warn">실험</span><select id="ms" title="대화 모델" style="max-width:190px"></select></div>
+<div id="msgs"></div><div id="pe" class="row" style="flex-wrap:wrap;gap:6px"></div>
+<div class="comp"><button class="circ" id="pa" title="파일 첨부 (이미지·오디오·영상)" style="background:var(--bg);color:var(--tx);border:1px solid var(--ln)">＋</button><textarea id="in" rows="1" placeholder="무엇을 할까요? 이미지·오디오·영상도 첨부할 수 있어요"></textarea><button class="circ" id="sd" title="전송">↑</button></div>
+<input type="file" id="fi" accept="image/*,audio/*,video/*" multiple hidden></section></div>`;
+const box=$('#msgs'),put=(c,t)=>{const d=document.createElement('div');d.className=c;if(t!=null)d.textContent=t;box.append(d);box.scrollTop=1e9;return d};
+$('#ho').onclick=home;$('#mb').onclick=()=>$('#as').classList.toggle('on');
+// ---------- 첨부 ----------
+const imgOf=b=>new Promise((res,rej)=>{const u=URL.createObjectURL(b),i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('이미지를 읽을 수 없어요'));i.src=u});
+const typeOf=f=>f.type.startsWith('image/')?'image':f.type.startsWith('audio/')?'audio':f.type.startsWith('video/')?'video':f.type.startsWith('text/')?'text':null;
+async function addAtt(blob,name,type,extra){const n=chat.an=(chat.an||0)+1,a={n,type,name,blob,url:URL.createObjectURL(blob),...extra};
+if(type==='image'){a.im=await imgOf(blob);a.w=a.im.naturalWidth;a.h=a.im.naturalHeight}ATT[chat.id+':'+n]=a;return a}
+const attOf=(n,types)=>{const l=Object.values(ATT).filter(a=>ATT[chat.id+':'+a.n]===a&&types.includes(a.type));
+if(n!=null&&n!==''){const k=parseInt(String(n).replace(/\D/g,''));const a=ATT[chat.id+':'+k];if(!a)throw new Error(`첨부 #${k}이 없어요 (새로고침하면 첨부 파일은 사라져요)`);if(!types.includes(a.type))throw new Error(`첨부 #${k}은 ${types.join('/')} 파일이 아니에요`);return a}
+const a=l.sort((x,y)=>y.n-x.n)[0];if(!a)throw new Error('쓸 수 있는 첨부 파일이 없어요. 먼저 '+({image:'이미지',audio:'오디오·영상'}[types[0]]||'파일')+'을 첨부해 달라고 사용자에게 안내하세요');return a};
+const tag=a=>`[첨부 #${a.n}: ${{image:'이미지',audio:'오디오',video:'영상',text:'텍스트'}[a.type]} ${a.name}${a.w?` ${a.w}×${a.h}`:''}]`;
+const drawAtt=(host,a)=>{if(!a){host.insertAdjacentHTML('beforeend','<div class="sub">(첨부 파일이 새로고침으로 사라졌어요)</div>');return}
+let e;if(a.type==='image'){e=new Image();e.src=a.url;e.className='pv'+(a.bg?' chk':'');e.style.maxHeight='260px';e.style.width='auto';e.style.maxWidth='100%';e.title='클릭하면 크게 봅니다';e.onclick=()=>window.open(a.url)}
+else if(a.type==='audio'||a.type==='video'){e=document.createElement(a.type);e.controls=true;e.src=a.url;e.className='pl'}
+else{e=document.createElement('div')}
+const row=document.createElement('div');row.className='sub';row.style.marginTop='4px';
+const dl=document.createElement('a');dl.href=a.url;dl.download=a.name;dl.textContent='⬇ #'+a.n+' '+a.name+' 저장';dl.style.color='var(--ac)';row.append(dl);host.append(e,row)};
+function drawMsg(m){const d=document.createElement('div');
+if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d.className='tl';d.textContent=m.t}else{d.className='m a';d.textContent=m.t}
+if(m.att&&m.att.length){const h=document.createElement('div');h.style.marginTop='6px';for(const n of m.att)drawAtt(h,ATT[chat.id+':'+n]);d.append(h)}return d}
+function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
+if(chat){for(const m of chat.msgs)if(!m.h)box.append(drawMsg(m))}
+else box.innerHTML='<div class="sub" style="margin:auto;text-align:center;line-height:1.8">🧪 에이전트 모드<br>이미지 생성 · 배경 제거 · 업스케일 · 자막 추출 · 계산 · 메모를<br>대화하며 시킬 수 있어요. 필요한 모델은 허락을 받고 받아요.</div>';
+box.scrollTop=1e9;drawList();drawModels()}
+function drawList(){const l=$('#cl');l.innerHTML='';for(const c of S.chats){const r=document.createElement('div');r.className='ci'+(chat&&c.id===chat.id?' on':'');
+const s=document.createElement('span');s.textContent=c.title;const x=document.createElement('button');x.textContent='✕';x.title='삭제';
+x.onclick=e=>{e.stopPropagation();if(busy)return;if(!confirm('이 채팅을 삭제할까요?'))return;S.chats=S.chats.filter(v=>v.id!==c.id);if(chat&&chat.id===c.id){chat=null;S.cur=null}save();renderChat()};
+r.onclick=()=>{if(busy)return;chat=c;S.cur=c.id;save();renderChat();$('#as').classList.remove('on')};r.append(s,x);l.append(r)}}
+$('#nc').onclick=()=>{if(busy)return;chat=null;S.cur=null;renderChat();$('#as').classList.remove('on');$('#in').focus()};
+// ---------- 모델 ----------
+const chatModel=()=>{const id=(chat&&chat.model)||S.model;return MODELS.find(m=>m.id===id&&m.kind==='chat')||null};
+async function drawModels(){const sel=$('#ms'),urls=await cacheUrls(),cur=chatModel(),have=[];
+for(const m of MODELS.filter(x=>x.kind==='chat'))if(await cached(m,urls)||(cur&&cur.id===m.id))have.push(m);
+sel.innerHTML=(have.length?'':'<option value="">모델 없음</option>')+have.map(m=>`<option value="${m.id}" ${cur&&cur.id===m.id?'selected':''}>${m.name}</option>`).join('')+'<option value="__dl">＋ 다른 모델 받기…</option>';
+if(!cur&&have.length){const h=st.hw||{},b=[...have].filter(m=>m.gb<=(h.cap||1.5)).pop()||have[0];setModel(b)}}
+function setModel(m){S.model=m.id;if(chat)chat.model=m.id;save();drawModels()}
+$('#ms').onchange=async e=>{if(busy){drawModels();return}const v=e.target.value;
+if(v==='__dl'){const m=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(m){try{await getW(m,status());setModel(m)}catch(er){put('m a','오류: '+er.message)}}drawModels();return}
+const m=MODELS.find(x=>x.id===v);if(m)setModel(m)};
+// ---------- 상태 표시줄 / 다운로드 허락 카드 ----------
+function status(){const d=put('tl');d.innerHTML='<span></span><div class="bar" style="height:4px;margin:4px 0 0"><i></i></div>';const sp=d.firstChild,bar=d.lastChild;bar.classList.add('ind');
+const f=(t,p)=>{sp.textContent=t;if(p!=null){bar.classList.remove('ind');bar.firstChild.style.width=p+'%'}else bar.classList.add('ind');box.scrollTop=1e9};f.done=()=>d.remove();return f}
+async function askDl(list,label){const urls=await cacheUrls(),ok=[];
+for(const m of list){const f=fit(m);if(f==='ok'||(f==='low'&&st.hw.ok))ok.push({m,f,c:await cached(m,urls)})}
+if(!ok.length){put('m a',`${label}에 쓸 수 있는 모델이 이 기기에서는 없어요. (WebGPU가 필요한 모델일 수 있어요)`);return null}
+const good=ok.filter(x=>x.f==='ok').map(x=>x.m),h=st.hw||{};
+const rec=label==='대화'?([...good].filter(m=>m.gb<=(h.cap||1.5)).pop()||good[0]):(good.find(m=>m.best)||good[0]||ok[0].m);
+return new Promise(res=>{const d=put('m a');d.innerHTML=`<b>🔓 모델 다운로드 허락이 필요해요</b><div class="sub" style="margin:4px 0 8px">${label} 모델을 쓰려고 하는데 받아 둔 모델이 없어요. 내 컴퓨터(브라우저)에 저장되고, 이후엔 인터넷 없이 써요.</div>
+<select class="dsel" style="width:100%">${ok.map(x=>`<option value="${x.m.id}" ${x.m===rec?'selected':''}>${x.m.name} · ${fmt(x.m.gb)}${x.m===rec?' (추천)':''}${x.f!=='ok'?' · 사양 부족 가능':''}${x.c?' · 저장됨':''}</option>`).join('')}</select>
+<div class="row" style="margin-top:8px"><button class="btn dy">다운로드</button><button class="btn ghost dn">거절</button></div>`;
+const fin=(v,t)=>{d.querySelector('.row').replaceWith(Object.assign(document.createElement('div'),{className:'sub',textContent:t}));d.querySelector('select').disabled=true;res(v)};
+d.querySelector('.dy').onclick=()=>{const m=MODELS.find(x=>x.id===d.querySelector('select').value);
+if(isMobile&&!ok.find(x=>x.m===m).c&&!confirm(`모바일 환경으로 보여요. 약 ${fmt(m.gb)}를 받습니다. 데이터 요금에 주의하세요. 계속할까요?`))return;fin(m,'✔ 허락함: '+m.name)};
+d.querySelector('.dn').onclick=()=>fin(null,'✕ 거절함');box.scrollTop=1e9})}
+// ---------- 워커 관리 (GPU 모델은 동시에 하나만) ----------
+async function getW(m,say){const k=m.kind==='chat'?'c':'x',o=k==='c'?'x':'c';
+if(W[k]&&W[k+'m']===m)return W[k];
+if(W[k]){W[k].terminate();W[k]=null;W[k+'m']=null}
+if(!m.cpu&&W[o]&&!W[o+'m'].cpu){W[o].terminate();W[o]=null;W[o+'m']=null} // GPU 메모리 확보
+if(!st.hw.ok&&!m.cpu)throw new Error('WebGPU를 사용할 수 없어 이 모델은 실행할 수 없어요');
+const c=await cached(m);say(c?`${m.name} 불러오는 중…`:`${m.name} 다운로드 중…`);wake(true);
+const files={},prev=st.model;st.model=m;
+try{const w=await new Promise((res,rej)=>{let tried=0;const alt=m.kind==='chat'&&!m.cls;
+const go=lib=>{const w=spawn(1);w.onerror=e=>rej(new Error('Worker 오류: '+(e.message||'불러오기 실패')));
+w.onmessage=({data:d})=>{if(d.type==='prog'){const p=d.p;if(p.file&&p.total){files[p.file]={l:p.loaded,t:p.total};const v=Object.values(files),l=v.reduce((a,b)=>a+b.l,0),t=v.reduce((a,b)=>a+b.t,0);say(`${m.name} ${c?'불러오는 중':'다운로드 중'}… ${(l/2**20).toFixed(0)} / ${(t/2**20).toFixed(0)}MB`,l/t*100)}}
+else if(d.type==='ready')res(w);
+else if(d.type==='err'){if(alt&&!tried){tried=1;w.terminate();go(3)}else{w.terminate();rej(new Error(errText(d.msg)))}}};
+w.postMessage({type:'load',eng:m.engine||m.kind,repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,safe:st.safe,thr:cpuThr(),lib,dev:st.hw&&st.hw.ok?'webgpu':'wasm'})};
+go(m.kind==='chat'?4:3)});
+W[k]=w;W[k+'m']=m;return w}finally{st.model=prev;wake(false)}}
+// 도구에 쓸 모델 찾기: 받아 둔 게 있으면 바로 쓰고, 없으면 다운로드 허락을 물어봄
+async function need(pred,label){const urls=await cacheUrls(),have=[];
+for(const m of MODELS.filter(pred))if(fit(m)==='ok'&&await cached(m,urls))have.push(m);
+if(have.length)return have.sort((a,b)=>(b.best?1:0)-(a.best?1:0)||a.pri-b.pri)[0];
+return askDl(MODELS.filter(pred),label)}
+// ---------- 도구 ----------
+const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c},png=c=>new Promise(r=>c.toBlob(r,'image/png'));
+const call=(w,msg,tr,onmsg)=>new Promise((res,rej)=>{w.onmessage=async({data:d})=>{try{if(d.type==='err')rej(new Error(errText(d.msg)));else{const r=await onmsg(d);if(r!==undefined)res(r)}}catch(e){rej(e)}};w.postMessage(msg,tr||[])});
+const p2=n=>String(n).padStart(2,'0'),tsh=t=>{const h=Math.floor(t/3600),mi=Math.floor(t%3600/60),sc=Math.floor(t%60);return h?h+':'+p2(mi)+':'+p2(sc):p2(mi)+':'+p2(sc)};
+const tcs=t=>{t=Math.max(0,t);return p2(Math.floor(t/3600))+':'+p2(Math.floor(t%3600/60))+':'+p2(Math.floor(t%60))+','+String(Math.min(999,Math.round((t-Math.floor(t))*1000))).padStart(3,'0')};
+const nt=(m,l)=>m?null:'사용자가 '+l+' 모델 다운로드를 거절했어요. 다른 방법을 안내하세요';
+const imgTool=(pred,label,bg)=>async(a,say)=>{const src=attOf(a.file,['image']),m=await need(pred,label);if(!m)return nt(m,label);
+const w=await getW(m,say),im=src.im,sc=Math.min(1,(m.maxIn||1024)/Math.max(im.naturalWidth,im.naturalHeight)),W_=Math.max(1,Math.round(im.naturalWidth*sc)),H_=Math.max(1,Math.round(im.naturalHeight*sc));
+const c=cv(W_,H_),cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(im,0,0,W_,H_);const px=cx.getImageData(0,0,W_,H_).data.buffer;say(`${label} 처리 중… (${m.name})`);
+const blob=await call(w,{type:'tool',px,w:W_,h:H_},[px],async d=>{if(d.type!=='tres')return;let o;
+if(bg){const mc=cv(d.w,d.h),mi=new ImageData(d.w,d.h);for(let i=0;i<d.mask.length;i++)mi.data[i*4+3]=d.mask[i];mc.getContext('2d').putImageData(mi,0,0);
+o=cv(im.naturalWidth,im.naturalHeight);const x=o.getContext('2d');x.drawImage(im,0,0,o.width,o.height);x.globalCompositeOperation='destination-in';x.imageSmoothingQuality='high';x.drawImage(mc,0,0,o.width,o.height)}
+else{o=cv(d.w,d.h);const id=new ImageData(d.w,d.h),n=d.w*d.h,ch=d.c;for(let i=0;i<n;i++){for(let k=0;k<3;k++)id.data[i*4+k]=d.data[i*ch+(ch>=3?k:0)];id.data[i*4+3]=255}o.getContext('2d').putImageData(id,0,0)}
+return png(o)});
+const r=await addAtt(blob,(bg?'cutout-':'upscaled-')+src.n+'.png','image',{bg});return {text:`${label} 완료: 첨부 #${r.n} (${r.w}×${r.h})`,att:[r.n]}};
 const TOOLS={
+image_generate:{d:'글로 이미지 만들기. prompt는 반드시 영어',a:'{"prompt":"영어 설명"}',f:async(a,say)=>{const p=String(a.prompt||'').trim();if(!p)throw new Error('prompt가 비어 있어요');
+const m=await need(x=>x.kind==='image','이미지 생성');if(!m)return nt(m,'이미지 생성');const w=await getW(m,say),t0=Date.now(),iv=setInterval(()=>say(`이미지 생성 중… ${Math.round((Date.now()-t0)/1000)}초 (${m.name})`),1000);say(`이미지 생성 중… (${m.name})`);
+try{const blob=await call(w,{type:'image',prompt:p,gap:st.safe?gapMs(m):0,duty:st.safe?imgDuty(m):0},[],d=>d.type==='img'?d.blob:undefined);
+const r=await addAtt(blob,'image-'+Date.now()+'.png','image');return {text:`이미지를 만들었어요: 첨부 #${r.n}`,att:[r.n]}}finally{clearInterval(iv)}}},
+remove_background:{d:'이미지 배경 제거(투명 PNG)',a:'{"file":첨부번호(생략하면 최근 이미지)}',f:imgTool(m=>m.kind==='tool'&&m.engine!=='sr','배경 제거',true)},
+upscale_image:{d:'이미지 확대(업스케일)',a:'{"file":첨부번호(생략하면 최근 이미지)}',f:imgTool(m=>m.kind==='tool'&&m.engine==='sr','업스케일',false)},
+transcribe:{d:'오디오·영상의 말을 글자와 타임스탬프로 받아쓰기(자막)',a:'{"file":첨부번호,"lang":"korean|english|japanese|chinese"}',f:async(a,say)=>{const f=attOf(a.file,['audio','video']),m=await need(x=>x.kind==='sub','자막 추출');if(!m)return nt(m,'자막 추출');
+say('오디오 읽는 중…');const buf=await f.blob.arrayBuffer(),ac=new(window.AudioContext||window.webkitAudioContext)();let au;
+try{au=await ac.decodeAudioData(buf)}catch(e){throw new Error('이 파일의 오디오를 읽지 못했어요')}finally{ac.close()}
+const oc=new OfflineAudioContext(1,Math.ceil(au.duration*16000),16000),sr=oc.createBufferSource();sr.buffer=au;sr.connect(oc.destination);sr.start();
+const pcm=(await oc.startRendering()).getChannelData(0),dur=pcm.length/16000,ab=pcm.slice().buffer,w=await getW(m,say),segs=[];
+await call(w,{type:'asr',audio:ab,lang:({korean:1,english:1,japanese:1,chinese:1}[a.lang]?a.lang:'korean')},[ab],d=>{if(d.type==='aseg'){say(`음성 인식 중… ${d.i+1} / ${d.n} 구간`,(d.i+1)/d.n*100);
+for(const c of d.chunks){const t=(c.t||'').trim();if(!t)continue;const s=d.off+(c.s??0);let e=c.e==null?Math.min(d.off+30,dur):d.off+c.e;if(e<=s)e=s+1;segs.push({s,e,t})}}else if(d.type==='adone')return true});
+if(!segs.length)return '인식된 음성이 없어요';
+const srt=segs.map((g,i)=>(i+1)+'\n'+tcs(g.s)+' --> '+tcs(g.e)+'\n'+g.t+'\n').join('\n'),r=await addAtt(new Blob(['﻿'+srt],{type:'text/plain;charset=utf-8'}),f.name.replace(/\.[^.]+$/,'')+'.srt','text');
+let tx=segs.map(g=>tsh(g.s)+' '+g.t).join('\n');if(tx.length>3000)tx=tx.slice(0,3000)+'\n…(이하 생략, 전체는 SRT 첨부 #'+r.n+')';
+return {text:`받아쓰기 완료 (${segs.length}줄, SRT는 첨부 #${r.n}):\n${tx}`,att:[r.n]}}},
 calc:{d:'계산',a:'{"expr":"수식"}',f:a=>{const e=String(a.expr||'').replace(/\^/g,'**').replace(/×/g,'*').replace(/÷/g,'/');
 if(!e||!/^[\d+\-*/%().\s]+$/.test(e))throw new Error('숫자와 + - * / % ^ ( ) 만 쓸 수 있어요');
 const v=Function('"use strict";return ('+e+')')();if(typeof v!=='number'||!isFinite(v))throw new Error('계산할 수 없는 식이에요');return String(+v.toPrecision(12))}},
 now:{d:'현재 날짜·시간',a:'{}',f:()=>new Date().toLocaleString('ko-KR',{dateStyle:'full',timeStyle:'medium'})},
-note_add:{d:'메모 저장',a:'{"text":"내용"}',f:a=>{const t=String(a.text||'').trim();if(!t)throw new Error('text가 비어 있어요');const n=notes();n.push({t,at:Date.now()});
-try{localStorage.setItem(NK,JSON.stringify(n.slice(-50)))}catch(e){throw new Error('이 브라우저에서는 메모를 저장할 수 없어요')}return '저장했어요 (총 '+Math.min(n.length,50)+'개)'}},
-note_list:{d:'저장된 메모 보기',a:'{}',f:()=>{const n=notes();return n.length?n.map((x,i)=>(i+1)+'. '+x.t).join('\n'):'저장된 메모가 없어요'}},
+note_add:{d:'메모 저장',a:'{"text":"내용"}',f:a=>{const t=String(a.text||'').trim();if(!t)throw new Error('text가 비어 있어요');let n=[];try{n=JSON.parse(localStorage.getItem('lais_notes')||'[]')}catch(e){}n.push({t,at:Date.now()});n=n.slice(-50);
+try{localStorage.setItem('lais_notes',JSON.stringify(n))}catch(e){throw new Error('이 브라우저에서는 메모를 저장할 수 없어요')}return '저장했어요 (총 '+n.length+'개)'}},
+note_list:{d:'저장된 메모 보기',a:'{}',f:()=>{let n=[];try{n=JSON.parse(localStorage.getItem('lais_notes')||'[]')}catch(e){}return n.length?n.map((x,i)=>(i+1)+'. '+x.t).join('\n'):'저장된 메모가 없어요'}},
 device:{d:'이 컴퓨터의 GPU·메모리 정보',a:'{}',f:()=>{const h=st.hw||{};return `GPU: ${h.name}\nWebGPU: ${h.ok?'가능':'불가'}\n메모리: ${h.mem?'약 '+h.mem+'GB':'알 수 없음'}\n성능 등급: ${{low:'낮음',mid:'보통',high:'높음'}[h.tier]||'알 수 없음'}`}}};
 const SYS=`당신은 사용자의 일을 도와주는 에이전트입니다. 한국어로 답하세요.
 도구가 필요하면 아래 형식 한 줄만 출력하고 바로 멈추세요. 다른 말은 덧붙이지 마세요.
 <tool>{"name":"도구이름","args":{...}}</tool>
-도구 결과가 오면 그것을 바탕으로 다음 도구를 쓰거나 최종 답을 쓰세요. 도구가 필요 없으면 바로 답하세요. 계산은 직접 하지 말고 calc를 쓰세요.
+도구 결과가 오면 그것을 바탕으로 다음 도구를 쓰거나 최종 답을 쓰세요. 도구가 필요 없으면 바로 답하세요. 계산은 직접 하지 말고 calc를 쓰세요. 결과 이미지·파일은 화면에 자동으로 보이니 다시 설명하지 마세요.
+사용자가 첨부한 파일은 메시지에 [첨부 #번호: …]로 표시됩니다.
 도구 목록:
 ${Object.entries(TOOLS).map(([k,v])=>`- ${k} ${v.a}: ${v.d}`).join('\n')}`;
 const clean=t=>t.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<think>[\s\S]*$/,'').replace(/^[\s\S]*?<\/think>/,'').trim();
-const callOf=t=>{const m=t.match(/<tool>\s*([\s\S]*?)\s*(?:<\/tool>|$)/);if(!m)return null;try{const j=JSON.parse(m[1].trim());return j&&TOOLS[j.name]?{name:j.name,args:j.args||{}}:{bad:'없는 도구예요: '+(j&&j.name)}}catch(e){return{bad:'도구 호출 형식이 올바른 JSON이 아니에요'}}};
-let hist=[],stopped=false;
-app.innerHTML=head('에이전트 <span class="tag warn">실험</span>','<button class="btn ghost" id="nw">새 작업</button>')+`<div class="sub">쓸 수 있는 도구: ${Object.values(TOOLS).map(v=>v.d).join(' · ')}</div>
-<div id="msgs"></div><div class="comp"><textarea id="in" rows="1" placeholder="시킬 일을 적어 주세요. 예: 1234×5678 계산해서 메모해 줘"></textarea><button class="circ" id="sd" title="전송">↑</button></div>`;
-$('#bk').onclick=()=>pick('chat');
-const box=$('#msgs'),put=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;box.append(d);box.scrollTop=1e9;return d};
-const gen=el=>new Promise((res,rej)=>{let acc='',rq=0;const w=st.worker;
-const paint=()=>{rq=0;const c=clean(acc);el.textContent=c.includes('<tool>')?'🔧 도구를 고르는 중…':(c||'생각 중…');box.scrollTop=1e9};
-w.onmessage=({data:d})=>{if(d.type==='tok'){acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}
-else if(d.type==='done'){cancelAnimationFrame(rq);res(clean(acc))}
-else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
-w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,gap:st.safe?gapMs(st.model):0,messages:[{role:'system',content:SYS},...hist]})});
-const run=async t=>{st.busy=true;stopped=false;$('#sd').textContent='■';wake(true);hist.push({role:'user',content:t});
-try{for(let i=0;i<6&&!stopped;i++){
-const el=put('m a','…'),out=await gen(el),c=callOf(out);
-if(stopped){el.textContent=clean(out)||'(중단됨)';break}
-if(!c){el.textContent=out||'(답이 비어 있어요)';hist.push({role:'assistant',content:out});break}
-el.remove();hist.push({role:'assistant',content:out});
-let r;if(c.bad)r='오류: '+c.bad;else{try{r=TOOLS[c.name].f(c.args)}catch(e){r='오류: '+e.message}}
-put('tl','🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args).length?' '+JSON.stringify(c.args):'')+'\n→ '+r);
-hist.push({role:'user',content:'[도구 결과] '+r});
+const callOf=t=>{const m=t.match(/<tool>\s*([\s\S]*?)\s*(?:<\/tool>|$)/);if(!m)return null;try{const j=JSON.parse(m[1].trim());return j&&TOOLS[j.name]?{name:j.name,args:(j.args&&typeof j.args==='object')?j.args:{}}:{bad:'없는 도구예요: '+(j&&j.name)}}catch(e){return{bad:'도구 호출 형식이 올바른 JSON이 아니에요'}}};
+const history=()=>{const h=[];for(const m of chat.msgs){if(m.r==='u')h.push({role:'user',content:m.llm||m.t});else if(m.r==='a')h.push({role:'assistant',content:m.t});else if(m.r==='tool')h.push({role:'user',content:'[도구 결과] '+m.res})}return h.slice(-24)};
+const llm=(w,m,el)=>new Promise((res,rej)=>{let acc='',rq=0;const paint=()=>{rq=0;const c=clean(acc);el.textContent=c.includes('<tool>')?'🔧 도구를 고르는 중…':(c||'생각 중…');box.scrollTop=1e9};
+w.onmessage=({data:d})=>{if(d.type==='tok'){acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);res(clean(acc))}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
+w.postMessage({type:'chat',noThink:m.noThink,max:st.maxUser?st.max:autoMax(m),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:SYS},...history()]})});
+// ---------- 대화 진행 ----------
+async function turn(){const m=chatModel();
+for(let i=0;i<6&&!stopped;i++){
+const sy=status();let w;try{w=await getW(m,sy)}finally{sy.done()}
+const el=put('m a','…'),out=await llm(w,m,el),c=callOf(out);
+if(stopped){el.textContent=out||'(중단됨)';if(out)chat.msgs.push({r:'a',t:out});return}
+if(!c){el.textContent=out||'(답이 비어 있어요)';chat.msgs.push({r:'a',t:out||'(답이 비어 있어요)'});return}
+el.remove();chat.msgs.push({r:'a',t:out,h:1});
+const sx=status();let r,att=[];
+if(c.bad)r='오류: '+c.bad;else{try{const x=await TOOLS[c.name].f(c.args,sx);if(x&&typeof x==='object'){r=x.text;att=x.att||[]}else r=String(x)}catch(e){r='오류: '+e.message}}
+sx.done();const tm={r:'tool',t:'🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args).length?' '+JSON.stringify(c.args):'')+'\n→ '+r,res:r,att};chat.msgs.push(tm);box.append(drawMsg(tm));box.scrollTop=1e9;save();
 if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
-catch(e){put('m a','오류: '+e.message);hist.pop()}
-st.busy=false;wake(false);$('#sd').textContent='↑';if(st.worker)st.worker.onmessage=null};
-const send=()=>{if(st.busy){stopped=true;st.worker&&st.worker.postMessage({type:'stop'});return}
-const t=$('#in').value.trim();if(!t)return;$('#in').value='';$('#in').style.height='auto';put('m u',t);run(t)};
+const send=async()=>{if(busy){stopped=true;W.c&&W.c.postMessage({type:'stop'});return}
+const t=$('#in').value.trim();if(!t&&!pend.length)return;
+let m=chatModel();if(!m){const c=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(!c)return;m=c;S.model=c.id}
+busy=true;stopped=false;$('#sd').textContent='■';
+if(!chat){chat={id:uid(),title:'새 채팅',msgs:[],model:m.id,an:0};S.chats.unshift(chat);S.cur=chat.id}else chat.model=m.id;
+if(box.querySelector('.sub[style*="margin:auto"]'))box.innerHTML='';
+const ids=[],tags=[];for(const f of pend){try{const a=await addAtt(f.blob,f.name,f.type);ids.push(a.n);tags.push(tag(a))}catch(e){put('tl','첨부 실패: '+e.message)}}
+pend=[];drawPend();$('#in').value='';$('#in').style.height='auto';
+const um={r:'u',t:t||'(첨부 파일)',att:ids,llm:(t||'')+(tags.length?'\n'+tags.join('\n'):'')};
+if(chat.title==='새 채팅'){chat.title=(t||tags[0]||'새 채팅').slice(0,28)}
+chat.msgs.push(um);box.append(drawMsg(um));$('#ct').textContent=chat.title;drawList();save();
+try{await turn()}catch(e){put('m a','오류: '+errText(e.message));if(/GPU 연결이 끊겼/.test(errText(e.message))){for(const k of ['c','x'])if(W[k]){try{W[k].terminate()}catch(_){}W[k]=null;W[k+'m']=null}}}
+busy=false;$('#sd').textContent='↑';save();drawList()};
+// ---------- 입력·첨부 ----------
+function drawPend(){const h=$('#pe');h.innerHTML='';pend.forEach((f,i)=>{const b=document.createElement('button');b.className='fc';b.textContent=({image:'🖼',audio:'🎵',video:'🎞',text:'📄'}[f.type]||'📎')+' '+f.name+' ×';b.onclick=()=>{pend.splice(i,1);drawPend()};h.append(b)})}
+const addFiles=fs=>{for(const f of fs){const ty=typeOf(f);if(ty&&ty!=='text'){pend.push({blob:f,name:f.name||('pasted-'+Date.now()+'.png'),type:ty})}else put('tl','지원하지 않는 파일이에요: '+f.name)}drawPend()};
+$('#pa').onclick=()=>$('#fi').click();$('#fi').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+const am=$('.am');am.ondragover=e=>e.preventDefault();am.ondrop=e=>{e.preventDefault();addFiles([...e.dataTransfer.files])};
+$('#in').onpaste=e=>{const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();addFiles(fs)}};
 $('#sd').onclick=send;
-$('#nw').onclick=()=>{if(st.busy){stopped=true;st.worker&&st.worker.postMessage({type:'stop'});return}hist=[];box.innerHTML=''};
 $('#in').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'};
 $('#in').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
+renderChat();
 }
 function imgView(){
 app.innerHTML=head('이미지 생성')+`<div class="two">
