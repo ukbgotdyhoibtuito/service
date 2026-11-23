@@ -645,7 +645,7 @@ const AGK='lais_agent_v1',ATT={},W={c:null,cm:null,x:null,xm:null}; // W.c/cm: �
 let S;try{S=JSON.parse(localStorage.getItem(AGK)||'null')}catch(e){}
 if(!S||!Array.isArray(S.chats))S={chats:[],cur:null,model:null};
 let incNext=false,chat=S.chats.find(c=>c.id===S.cur),busy=false,stopped=false,pend=[];
-const save=()=>{try{S.chats=S.chats.slice(0,40);const cc=S.chats.filter(c=>!c.inc);localStorage.setItem(AGK,JSON.stringify({...S,chats:cc,cur:cc.some(c=>c.id===S.cur)?S.cur:null}))}catch(e){}}; // 시크릿 채팅은 저장하지 않음
+const save=()=>{try{S.chats=S.chats.slice(0,40);const cc=S.chats.filter(c=>!c.inc).map(c=>c.msgs.length>200?{...c,msgs:c.msgs.slice(-200)}:c);localStorage.setItem(AGK,JSON.stringify({...S,chats:cc,cur:cc.some(c=>c.id===S.cur)?S.cur:null}))}catch(e){}}; // 시크릿 채팅은 저장하지 않음
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 // ---------- 메모리 (클로드식: 파일 단위로 저장 — 나(프로필·응답 선호) / 영역(주제별), 파일마다 요약 + 세부 정보) ----------
 const MK='lais_memory_v2',MCAP=30,FCAP=12,PROF={profile:'프로필',pref:'응답 선호'};
@@ -747,14 +747,15 @@ const attOf=(n,types)=>{const l=Object.values(ATT).filter(a=>ATT[chat.id+':'+a.n
 if(n!=null&&n!==''){const k=parseInt(String(n).replace(/\D/g,''));const a=ATT[chat.id+':'+k];if(!a)throw new Error(`첨부 #${k}이 없어요 (새로고침하면 첨부 파일은 사라져요)`);if(!types.includes(a.type))throw new Error(`첨부 #${k}은 ${types.join('/')} 파일이 아니에요`);return a}
 const a=l.sort((x,y)=>y.n-x.n)[0];if(!a)throw new Error('쓸 수 있는 첨부 파일이 없어요. 먼저 '+({image:'이미지',audio:'오디오·영상'}[types[0]]||'파일')+'을 첨부해 달라고 사용자에게 안내하세요');return a};
 const tag=a=>`[첨부 #${a.n}: ${{image:'이미지',audio:'오디오',video:'영상',text:'텍스트'}[a.type]} ${a.name}${a.w?` ${a.w}×${a.h}`:''}]`;
+const qa=x=>String(x).replace(/[&"<>]/g,c=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[c]));
 const IC_DL='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>',IC_OP='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8 8M10 6H5a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1v-5"/></svg>';
 const kb=n=>n<1024?n+'B':n<1048576?(n/1024).toFixed(0)+'KB':(n/1048576).toFixed(1)+'MB';
 const drawAtt=(host,a)=>{if(!a){host.insertAdjacentHTML('beforeend','<div class="cap">(첨부 파일이 새로고침으로 사라졌어요)</div>');return}
 if(a.type==='image'){const w=document.createElement('div');w.className='ia';const im=new Image();im.src=a.url;im.alt=a.name;if(a.bg)im.className='chk';im.onclick=()=>window.open(a.url);
-const ab=document.createElement('div');ab.className='ab';ab.innerHTML=`<a href="${a.url}" download="${a.name}" title="저장">${IC_DL}</a><a href="${a.url}" target="_blank" rel="noopener" title="크게 보기">${IC_OP}</a>`;w.append(im,ab);
+const ab=document.createElement('div');ab.className='ab';ab.innerHTML=`<a href="${a.url}" download="${qa(a.name)}" title="저장">${IC_DL}</a><a href="${a.url}" target="_blank" rel="noopener" title="크게 보기">${IC_OP}</a>`;w.append(im,ab);
 const cp=document.createElement('div');cp.className='cap';cp.textContent=`#${a.n} · ${a.w}×${a.h}${a.bg?' · 투명 배경':''}`;host.append(w,cp);return}
 if(a.type==='audio'||a.type==='video'){const e=document.createElement(a.type);e.controls=true;e.src=a.url;e.className='pl';host.append(e);return}
-const f=document.createElement('div');f.className='fchip';f.innerHTML=`<span>📄</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><span class="cap">${kb(a.blob.size)}</span><a href="${a.url}" download="${a.name}">${IC_DL} 저장</a>`;f.children[1].textContent=a.name;host.append(f)};
+const f=document.createElement('div');f.className='fchip';f.innerHTML=`<span>📄</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><span class="cap">${kb(a.blob.size)}</span><a href="${a.url}" download="${qa(a.name)}">${IC_DL} 저장</a>`;f.children[1].textContent=a.name;host.append(f)};
 const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const md=x=>{const parts=esc(x).split(/```[^\n]*\n?/);return parts.map((t,i)=>i%2?'<pre><code>'+t.replace(/\n$/,'')+'</code></pre>':t.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>')).join('')};
 const FL={image:'이미지',audio:'오디오',video:'동영상',text:'문서'};
@@ -789,7 +790,7 @@ box.scrollTop=1e9;drawList();drawModels();drawInc()}
 function drawInc(){const b=$('#ic');b.classList.toggle('on',inc());b.style.opacity=inc()?1:.5;b.disabled=!!(chat&&chat.msgs.length);b.title=inc()?'시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요':'시크릿 채팅으로 시작 (새 채팅에서만 켤 수 있어요)'}
 function drawList(){const l=$('#cl');l.innerHTML='';for(const c of S.chats){const r=document.createElement('div');r.className='ci'+(chat&&c.id===chat.id?' on':'');
 const s=document.createElement('span');s.textContent=(c.inc?'👻 ':'')+c.title;const x=document.createElement('button');x.textContent='✕';x.title='삭제';
-x.onclick=e=>{e.stopPropagation();if(busy)return;if(!confirm('이 채팅을 삭제할까요?'))return;S.chats=S.chats.filter(v=>v.id!==c.id);if(chat&&chat.id===c.id){chat=null;S.cur=null}save();renderChat()};
+x.onclick=e=>{e.stopPropagation();if(busy)return;if(!confirm('이 채팅을 삭제할까요?'))return;for(const k of Object.keys(ATT))if(k.startsWith(c.id+':')){try{URL.revokeObjectURL(ATT[k].url)}catch(_){}delete ATT[k]}S.chats=S.chats.filter(v=>v.id!==c.id);if(chat&&chat.id===c.id){chat=null;S.cur=null}save();renderChat()};
 r.onclick=()=>{if(busy)return;chat=c;S.cur=c.id;save();renderChat();$('#as').classList.remove('on')};r.append(s,x);l.append(r)}}
 $('#ic').onclick=()=>{if(busy||(chat&&chat.msgs.length))return;if(chat)chat.inc=!chat.inc;else incNext=!incNext;renderChat()};
 $('#nc').onclick=()=>{if(busy)return;chat=null;S.cur=null;incNext=false;renderChat();$('#as').classList.remove('on');$('#in').focus()};
@@ -881,7 +882,7 @@ calc:{d:'계산',a:'{"expr":"수식"}',f:a=>{const e=String(a.expr||'').replace(
 if(!e||!/^[\d+\-*/%().\s]+$/.test(e))throw new Error('숫자와 + - * / % ^ ( ) 만 쓸 수 있어요');
 const v=Function('"use strict";return ('+e+')')();if(typeof v!=='number'||!isFinite(v))throw new Error('계산할 수 없는 식이에요');return String(+v.toPrecision(12))}},
 remember:{d:'새로 알게 된 오래 유지될 정보를 메모리에 저장(짧은 한 문장)',a:'{"text":"저장할 내용","topic":"주제 이름(진행 중인 일·공부일 때만, 선택)"}',f:a=>{if(!memOn())return'메모리를 쓰지 않는 상태라 저장하지 않았어요';
-const t=String(a.text||'').trim();if(!t)throw new Error('text가 비어 있어요');const r=mAdd(t,'auto',null,a.topic);if(r.err)throw new Error(r.err);if(r.dup)return'이미 기억하고 있어요: '+t;
+const t=String(a.text||'').trim();if(!t)throw new Error('text가 비어 있어요');if(SENS.test(t))throw new Error('건강·종교·정치 같은 민감한 정보는 자동으로 저장하지 않아요. 사용자가 직접 메모리 창에서 추가할 수 있어요');const r=mAdd(t,'auto',null,a.topic);if(r.err)throw new Error(r.err);if(r.dup)return'이미 기억하고 있어요: '+t;
 return{text:'기억했어요: '+r.it.d.t,items:[r.it],k:'add'}}},
 forget:{d:'메모리에서 지우기(내용 일부나 주제 이름)',a:'{"target":"지울 내용 일부"}',f:a=>{if(!memOn())return'메모리를 쓰지 않는 상태예요';const q=String(a.target??a.text??'').trim();if(q.length<2)throw new Error('target이 비어 있어요');
 const it=mForget(q);if(!it.length)return'해당하는 기억이 없어요';return{text:'잊었어요: '+it.map(x=>x.d.t).join(' / '),items:it,k:'del'}}},
@@ -918,7 +919,9 @@ const js=jsonAt(b.replace(/```(?:json)?/g,''));let j=null;try{j=js&&JSON.parse(j
 if(!j||typeof j!=='object')return m?{bad}:null;const nm=j.name||j.tool;
 if(!nm||!TOOLS[nm])return m?{bad:`없는 도구예요: ${nm}. 쓸 수 있는 도구: ${Object.keys(TOOLS).join(', ')}`}:null;
 const ar=j.args||j.arguments||j.parameters||{};return{name:nm,args:typeof ar==='object'?ar:{}}};
-const history=()=>{const h=[];for(const m of chat.msgs){if(m.r==='u')h.push({role:'user',content:m.llm||m.t});else if(m.r==='a')h.push({role:'assistant',content:m.t});else if(m.r==='tool')h.push({role:'user',content:'[도구 결과] '+m.res})}return h.slice(-24)};
+const history=()=>{const h=[];for(const m of chat.msgs){if(m.r==='u')h.push({role:'user',content:m.llm||m.t});else if(m.r==='a')h.push({role:'assistant',content:m.t});else if(m.r==='tool')h.push({role:'user',content:'[도구 결과] '+m.res})}return norm(h.slice(-24))};
+// 일부 모델(Gemma 등)의 채팅 템플릿은 user/assistant가 번갈아야 하고 user로 시작해야 함 (오류·중단 뒤에 user가 연달아 쌓일 수 있음)
+const norm=h=>{const o=[];for(const m of h){const l=o[o.length-1];if(l&&l.role===m.role)l.content+='\n'+m.content;else o.push({...m})}while(o.length&&o[0].role!=='user')o.shift();return o};
 async function sysNow(){const urls=await cacheUrls(),ls=[];
 for(const [k,pr] of [['image_generate',x=>x.kind==='image'],['remove_background',x=>x.kind==='tool'&&x.engine!=='sr'],['upscale_image',x=>x.kind==='tool'&&x.engine==='sr'],['transcribe',x=>x.kind==='sub']]){
 const t=[];for(const m of MODELS.filter(pr))t.push(`${m.id}(${fmt(m.gb)}${await cached(m,urls)?', 설치됨':''})`);ls.push(`- ${k}: ${t.join(' / ')}`)}
