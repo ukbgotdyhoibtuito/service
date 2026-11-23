@@ -157,6 +157,7 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .ci span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci button{background:none;border:0;color:var(--sub);cursor:pointer;opacity:0;padding:0 4px}.ci:hover button{opacity:1}
 .am{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}#mb{display:none}
 @media(max-width:700px){.ag{gap:0}.as{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:20;padding:16px 12px;transform:translateX(-105%);transition:transform .2s}.as.on{transform:none;border-right:1px solid var(--ln)}#mb{display:inline-block}.lg2{display:flex;padding:0}.am .m.u{max-width:90%}.ci button{opacity:1}}
+.ta{align-self:flex-start;max-width:100%;font-size:12.5px;color:var(--sub);border:1px solid var(--ln);border-radius:12px;padding:7px 12px;background:var(--card)}.ta summary{cursor:pointer}.ta .tb{display:flex;flex-direction:column;gap:6px;margin-top:8px}.ta .tl{align-self:stretch;max-width:100%}
 .tl{align-self:flex-start;max-width:92%;font-size:12.5px;color:var(--sub);border-left:2px solid var(--ln);padding:2px 10px;white-space:pre-wrap;word-break:break-word}
 .uw{align-self:flex-end;max-width:82%;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .am .uw .m.u{max-width:100%;align-self:auto}
@@ -781,8 +782,13 @@ for(const n of m.att)drawAtt(d,ATT[chat.id+':'+n]);
 const dt=document.createElement('details');dt.innerHTML='<summary>세부 정보</summary><pre></pre>';dt.lastChild.textContent=m.t;d.append(dt);return d}
 if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d.className='tl';d.textContent=m.t}else{d.className='m a';d.innerHTML=md(m.t)}
 if(m.att&&m.att.length){const h=document.createElement('div');h.style.marginTop='6px';for(const n of m.att)drawAtt(h,ATT[chat.id+':'+n]);d.append(h)}return d}
+// 도구 사용 기록(계산·메모리·오류 등)은 연달아 나오면 하나의 접이식 '도구 N개 사용'으로 묶어 답변 위에 둠. 결과물 카드(이미지·파일)는 그대로 보임
+const isCard=m=>m.r==='tool'&&m.att&&m.att.length&&m.nm&&!/^오류/.test(m.res||'');
+function addMsg(m){if(m.r!=='tool'||isCard(m)){box.append(drawMsg(m));return}
+let ta=box.lastElementChild;if(!ta||!ta.classList.contains('ta')){ta=document.createElement('details');ta.className='ta';ta.n=0;ta.innerHTML='<summary></summary><div class="tb"></div>';box.append(ta)}
+ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='🔧 도구 '+(++ta.n)+'개 사용'}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
-if(chat){for(const m of chat.msgs)if(!m.h)box.append(drawMsg(m))}
+if(chat){for(const m of chat.msgs)if(!m.h)addMsg(m)}
 else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','1234 × 5678 계산해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
 box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#in').value=b.textContent.replace(/ \(.*\)$/,'');$('#in').focus();$('#in').oninput({target:$('#in')})})}
 box.scrollTop=1e9;drawList();drawModels();drawInc()}
@@ -942,7 +948,7 @@ const pv=chat.msgs[chat.msgs.length-1],untrusted=!!pv&&pv.r==='tool'&&!SAFE.incl
 el.remove();chat.msgs.push({r:'a',t:out,h:1});
 const sx=status();let r,att=[],mdl='',mi,mk;
 if(c.bad)r='오류: '+c.bad;else if(MEMT.includes(c.name)&&untrusted)r='오류: 자막·파일 내용 같은 도구 결과를 보고는 메모리를 바꿀 수 없어요. 메모리는 사용자가 직접 한 말로만 바꿔요';else{try{const x=await TOOLS[c.name].f(c.args,sx);if(x&&typeof x==='object'){r=x.text;mi=x.items;mk=x.k;att=x.att||[];mdl=x.model?x.model+(x.sec?` · ${x.sec}초`:''):''}else r=String(x)}catch(e){r='오류: '+e.message}}
-sx.done();const tm={r:'tool',t:'🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args).length?' '+JSON.stringify(c.args):'')+'\n→ '+r,res:r,att,nm:c.name,mdl,items:mi,k:mk};chat.msgs.push(tm);box.append(drawMsg(tm));sb();save();
+sx.done();const tm={r:'tool',t:'🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args).length?' '+JSON.stringify(c.args):'')+'\n→ '+r,res:r,att,nm:c.name,mdl,items:mi,k:mk};chat.msgs.push(tm);addMsg(tm);sb();save();
 if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
 const send=async()=>{if(busy){stopped=true;W.c&&W.c.postMessage({type:'stop'});return}
 const t=$('#in').value.trim();if(!t&&!pend.length)return;
