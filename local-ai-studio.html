@@ -170,12 +170,16 @@ a.uf:hover{border-color:var(--ac)}
 .uf div{min-width:0;line-height:1.35}.uf b{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.uf span{font-size:12.5px;color:var(--sub)}
 .mc{align-self:flex-start;max-width:92%;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--sub);border:1px solid var(--ln);border-radius:99px;padding:4px 6px 4px 12px}
 .mc button{background:none;border:0;color:var(--ac);cursor:pointer;font-size:12.5px;padding:2px 8px}
-dialog.mdl{width:min(94vw,640px);max-width:none;height:min(82vh,680px);padding:0;overflow:hidden}dialog.mdl[open]{display:flex;flex-direction:column}
+dialog.mdl{width:min(94vw,780px);max-width:none;height:min(82vh,680px);padding:0;overflow:hidden}dialog.mdl[open]{display:flex;flex-direction:column}
 .mh{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--ln)}
 .mbody{flex:1;overflow:auto;padding:4px 16px 16px;min-height:0}
 .mf{padding:10px 16px 14px;border-top:1px solid var(--ln)}
 .cp{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--ln);border-radius:24px;padding:6px 6px 6px 16px}.cp:focus-within{border-color:var(--ac)}.cp input{border:0;background:none;outline:0;padding:6px 0;min-width:0}
-.stb{display:flex;gap:6px;padding:0 16px;border-bottom:1px solid var(--ln)}.stb button{background:none;border:0;border-bottom:2px solid transparent;padding:9px 10px;cursor:pointer;color:var(--sub);font:inherit;font-weight:500}.stb button.on{color:var(--tx);border-color:var(--ac)}
+.sw{flex:1;display:flex;min-height:0}
+.sn{width:176px;flex:none;border-right:1px solid var(--ln);padding:12px 10px;display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--tx) 3%,transparent)}
+.sn button{text-align:left;background:none;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font:inherit;color:var(--tx)}.sn button:hover{background:color-mix(in srgb,var(--tx) 6%,transparent)}.sn button.on{background:color-mix(in srgb,var(--ac) 13%,transparent);color:var(--ac);font-weight:600}
+.sc{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+@media(max-width:600px){.sw{flex-direction:column}.sn{width:auto;flex-direction:row;border-right:0;border-bottom:1px solid var(--ln);padding:8px 10px;overflow-x:auto}}
 .mh2{font-size:15px;font-weight:700;margin:20px 0 6px}
 .mr{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr) 138px;gap:14px;align-items:center;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--ln);padding:14px 2px;cursor:pointer;color:var(--tx);font-size:14px}.mr:hover{background:color-mix(in srgb,var(--tx) 4%,transparent)}
 .mr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mr .n{font-weight:500}.mr .s{color:var(--sub)}.mr .t{font-size:13px;text-align:right}
@@ -706,7 +710,7 @@ app.innerHTML=`<div class="ag"><aside class="as" id="as"><div class="lgo"><i>✳
 const box=$('#msgs'),sb=()=>{if(box.scrollHeight-box.scrollTop-box.clientHeight<90)box.scrollTop=1e9},put=(c,t)=>{const d=document.createElement('div');d.className=c;if(t!=null)d.textContent=t;box.append(d);sb();return d};
 $('#ho').onclick=home;$('#mb').onclick=()=>$('#as').classList.toggle('on');
 $('#me').onclick=()=>{const dl=document.createElement('dialog');dl.className='mdl';let cur=null;
-dl.innerHTML=`<div class="mh"><button class="btn ghost" id="mk" style="padding:4px 12px;min-height:0">←</button><b class="grow" id="mt"></b><button class="btn ghost del" id="md">삭제</button><button class="btn ghost" id="mx" style="padding:4px 12px;min-height:0">닫기</button></div><div class="stb"><button class="on">🧠 메모리</button></div><div class="mbody" id="mbody"></div><div class="mf"><div class="sub" id="mm" style="min-height:1.2em;margin-bottom:6px"></div><div class="cp"><input type="text" id="mi" maxlength="100"><button class="circ" id="ma" title="전송">↑</button></div></div>`;
+dl.innerHTML=`<div class="mh"><button class="btn ghost" id="mk" style="padding:4px 12px;min-height:0">←</button><b class="grow" id="mt"></b><button class="btn ghost del" id="md">삭제</button><button class="btn ghost" id="mx" style="padding:4px 12px;min-height:0">닫기</button></div><div class="sw"><nav class="sn"><button class="on">🧠 메모리</button></nav><div class="sc"><div class="mbody" id="mbody"></div><div class="mf"><div class="sub" id="mm" style="min-height:1.2em;margin-bottom:6px"></div><div class="cp"><input type="text" id="mi" maxlength="100"><button class="circ" id="ma" title="전송">↑</button></div></div></div></div>`;
 document.body.append(dl);const q=s=>dl.querySelector(s),body=q('#mbody');
 const draw=()=>{const f=cur&&M.files.find(x=>x.id===cur);if(cur&&!f)cur=null;
 q('#mk').style.display=q('#md').style.display=f?'':'none';q('#mt').textContent=f?'메모리':'⚙️ 설정';
