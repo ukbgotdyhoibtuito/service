@@ -737,7 +737,23 @@ const llm=(w,m,el)=>new Promise((res,rej)=>{let acc='',rq=0;const paint=()=>{rq=
 w.onmessage=({data:d})=>{if(d.type==='tok'){acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);res(clean(acc))}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
 w.postMessage({type:'chat',noThink:m.noThink,max:st.maxUser?st.max:autoMax(m),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:SYS},...SHOT,...history()]})});
 // ---------- 대화 진행 ----------
+// 작은 모델은 도구 형식을 못 지키는 경우가 많아서, 분명한 요청은 규칙으로 바로 도구에 연결함
+const hasAtt=ty=>Object.keys(ATT).some(k=>k.startsWith(chat.id+':')&&ty.includes(ATT[k].type));
+function route(t){if(/(추천|어떻게|방법|알려|뭐야|무엇|\?)/.test(t))return null;
+if(hasAtt(['image'])&&/배경.{0,6}(제거|지워|지우|빼|없애)/.test(t))return {name:'remove_background',args:{}};
+if(hasAtt(['image'])&&/(업스케일|확대|해상도|화질.{0,4}(높|올|개선))/.test(t))return {name:'upscale_image',args:{}};
+if(hasAtt(['audio','video'])&&/(자막|받아\s?쓰|전사|텍스트로)/.test(t))return {name:'transcribe',args:{}};
+if(/(그려|그림.{0,4}(만들|생성)|(이미지|사진|그림).{0,12}(생성|만들|그려)|(generate|create|draw).{0,20}(image|picture))/i.test(t))return {name:'image_generate',args:{prompt:t}};
+return null}
+const toEn=(w,m,t)=>new Promise(res=>{let acc='';w.onmessage=({data:d})=>{if(d.type==='tok')acc+=d.t;else if(d.type==='done')res(clean(acc).replace(/^["'`]+|["'`]+$/g,'').trim());else if(d.type==='err')res('')};
+w.postMessage({type:'chat',noThink:true,max:100,gap:0,messages:[{role:'system',content:'Turn the user\'s request into one short English prompt for an image generator, describing only the picture to draw. Output only the prompt.'},{role:'user',content:t}]})});
 async function turn(){const m=chatModel();
+const lu=[...chat.msgs].reverse().find(x=>x.r==='u'),rt=lu&&route(lu.t);
+if(rt){const sx=status();let r,att=[];
+try{if(rt.name==='image_generate'&&/[가-힣]/.test(rt.args.prompt)){sx('번역 중…');const w=await getW(m,sx),en=await toEn(w,m,lu.t);if(en)rt.args.prompt=en}
+const x=await TOOLS[rt.name].f(rt.args,sx);if(x&&typeof x==='object'){r=x.text;att=x.att||[]}else r=String(x)}catch(e){r='오류: '+e.message}
+sx.done();chat.msgs.push({r:'a',t:'<tool>'+JSON.stringify(rt)+'</tool>',h:1});
+const tm={r:'tool',t:'🔧 '+rt.name+(Object.keys(rt.args).length?' '+JSON.stringify(rt.args):'')+'\n→ '+r,res:r,att};chat.msgs.push(tm);box.append(drawMsg(tm));sb();save();return}
 for(let i=0;i<6&&!stopped;i++){
 const sy=status();let w;try{w=await getW(m,sy)}finally{sy.done()}
 const el=put('m a','…'),out=await llm(w,m,el),c=callOf(out);
