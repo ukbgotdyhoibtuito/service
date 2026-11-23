@@ -993,7 +993,7 @@ sx.done();const tm={r:'tool',t:'🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args
 if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
 const send=async()=>{if(busy){stopped=true;W.c&&W.c.postMessage({type:'stop'});return}
 const t=$('#in').value.trim();if(!t&&!pend.length)return;
-let m=chatModel();if(!m){const c=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(!c){if(memoryReturn){memoryReturn=false;openMemory(memoryFocus)}return}m=c;S.model=c.id}
+let m=chatModel();if(!m){const c=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(!c){if(memoryReturn){const focus=memoryFocus;memoryReturn=false;memoryFocus=null;openMemory(focus)}return}m=c;S.model=c.id}
 busy=true;stopped=false;$('#sd').textContent='■';
 if(!chat){chat={id:uid(),title:'새 채팅',msgs:[],model:m.id,an:0};S.chats.unshift(chat);S.cur=chat.id}else chat.model=m.id;
 if(box.querySelector('.empty'))box.innerHTML='';
@@ -1003,7 +1003,7 @@ const um={r:'u',t:t||'(첨부 파일)',att:ids,llm:(t||'')+(tags.length?'\n'+tag
 if(chat.title==='새 채팅'){chat.title=(t||tags[0]||'새 채팅').slice(0,28)}
 chat.msgs.push(um);box.append(drawMsg(um));box.scrollTop=1e9;$('#ct').textContent=chat.title;drawList();save();
 try{await turn()}catch(e){put('m a','오류: '+errText(e.message));if(/GPU 연결이 끊겼/.test(errText(e.message))){for(const k of ['c','x'])if(W[k]){try{W[k].terminate()}catch(_){}W[k]=null;W[k+'m']=null}}}
-const returnToMemory=memoryReturn;memoryReturn=false;busy=false;$('#sd').textContent='↑';save();drawList();if(returnToMemory)openMemory(memoryFocus)};
+const returnToMemory=memoryReturn,returnMemoryId=memoryFocus;memoryReturn=false;memoryFocus=null;busy=false;$('#sd').textContent='↑';save();drawList();if(returnToMemory)openMemory(returnMemoryId)};
 // ---------- 입력·첨부 ----------
 function drawPend(){const h=$('#pe');h.innerHTML='';pend.forEach((f,i)=>{const b=document.createElement('button');b.className='fc';b.textContent=({image:'🖼',audio:'🎵',video:'🎞',text:'📄'}[f.type]||'📎')+' '+f.name+' ×';b.onclick=()=>{pend.splice(i,1);drawPend()};h.append(b)})}
 const addFiles=fs=>{for(const f of fs){const ty=typeOf(f);if(ty&&ty!=='text'){pend.push({blob:f,name:f.name||('pasted-'+Date.now()+'.png'),type:ty})}else put('tl','지원하지 않는 파일이에요: '+f.name)}drawPend()};
