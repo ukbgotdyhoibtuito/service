@@ -122,6 +122,8 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
  .grid{gap:10px}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.bar.ind i{animation:none;width:100%;opacity:.4}}
+.lnk{background:none;border:0;cursor:pointer;color:var(--sub);font-size:12px;padding:6px 10px;opacity:.65;text-decoration:underline;text-underline-offset:3px}.lnk:hover{opacity:1;color:var(--tx)}
+.tl{align-self:flex-start;max-width:92%;font-size:12.5px;color:var(--sub);border-left:2px solid var(--ln);padding:2px 10px;white-space:pre-wrap;word-break:break-word}
 .pm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .pm button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--ln);border-radius:10px;background:none;cursor:pointer;transition:border-color .15s,background-color .15s}
 .pm button:hover{border-color:var(--ac)}
@@ -424,7 +426,7 @@ function spawn(z){if(z&&st.model&&st.model.engine==='zimage')return new ZWorker(
 return new Worker(u,{type:'module'})}
 // ===== 화면 =====
 async function home(){
-killWorker();st.kind=st.model=null;
+killWorker();st.kind=st.model=null;st.agent=false;
 if(!st.hw)await detect();const h=st.hw;
 app.innerHTML=`<div class="row"><h1 class="grow"><span style="color:var(--ac)">✳</span> Local AI Studio</h1><button class="btn ghost" id="gs" title="설정" style="padding:5px 12px;font-size:13px;min-height:0;white-space:nowrap">⚙ 설정</button></div><div class="sub">모든 AI 처리는 이 컴퓨터 안에서 실행됩니다. 모델 다운로드 외에는 외부로 전송하지 않습니다.</div>
 <div class="card hw"><div class="row"><span class="dot ${h.ok?'':'bad'}"></span><b class="grow">${h.ok?'WebGPU 사용 가능':'WebGPU 사용 불가'}</b></div>
@@ -436,9 +438,11 @@ ${h.ok?'':'<div class="sub" style="margin-top:8px">최신 Chrome/Edge 데스크�
 <button class="card big" data-k="image">🎨<b>이미지 생성</b><span class="sub">텍스트로 이미지 만들기</span></button>
 <button class="card big" data-k="tool">🪄<b>이미지 처리</b><span class="sub">배경 제거 · 업스케일</span></button></div>
 <h3 class="sec">AI 도구</h3><div class="sub">목적에 맞는 모델을 도구 안에서 따로 받아, 내 컴퓨터에서 바로 작업해요.</div>
-<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>`;
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>
+<div style="margin-top:auto;padding-top:28px;text-align:center"><button class="lnk" id="ag" title="도구를 쓰는 실험 기능">🧪 에이전트 모드 (실험)</button></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
 $('#gs').onclick=settings;
+$('#ag').onclick=()=>{st.agent=true;pick('chat')};
 }
 function settings(){ // 설정 화면
 app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>설정</h2></div><div class="card" id="pmh"></div>`;
@@ -468,7 +472,7 @@ const mkBody=()=>{const sel=kind==='chat'?[...st.flt]:[],vis=states.filter(s=>se
 if(!vis.length)return '<div class="sub" style="margin-top:12px">조건에 맞는 모델이 없습니다.</div>';
 return groups.map(g=>{const a=vis.filter(s=>(s.m.grp||'')===g);return a.length?(g?`<h3 class="gh">${g}</h3>`:'')+`<div class="grid">${a.map(cardH).join('')}</div>`:''}).join('')};
 const fbar=kind==='chat'?`<div class="fwrap"><button class="fbtn" id="fb"></button><span id="fc" style="display:contents"></span><div class="fpop" id="fp" style="display:none"><label><input type="checkbox" id="fall">전체</label><hr>${TAGS.map(([k,l])=>`<label><input type="checkbox" data-t="${k}">${l}</label>`).join('')}</div></div>`:'';
-app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>${TITLES[kind]} 모델 선택</h2></div>${fbar}<div id="mg">${mkBody()}</div>`;
+app.innerHTML=`<div class="top"><button class="btn ghost" id="bk">← 처음으로</button><h2>${st.agent&&kind==='chat'?'에이전트':TITLES[kind]} 모델 선택</h2></div>${fbar}${st.agent&&kind==='chat'?'<div class="sub" style="margin-top:8px">🧪 도구를 부르려면 어느 정도 똑똑한 모델이 필요해요. Qwen3 1.7B 이상을 추천해요.</div>':''}<div id="mg">${mkBody()}</div>`;
 $('#bk').onclick=home;
 const bind=()=>{$('#mg').querySelectorAll('.del').forEach(b=>b.onclick=async e=>{e.stopPropagation();const m=MODELS.find(x=>x.id===b.dataset.id);
 if(!confirm(`'${m.name}' 모델을 삭제할까요?\n저장된 파일(약 ${fmt(m.gb)})이 이 브라우저에서 지워지며, 다시 사용하려면 재다운로드해야 합니다.`))return;
@@ -504,7 +508,7 @@ const v=Object.values(st.files),l=v.reduce((a,b)=>a+b.l,0),t=v.reduce((a,b)=>a+b
 $('#br').classList.remove('ind');$('#br i').style.width=(l/t*100)+'%';
 $('#pf').textContent=`${p.file.split('/').pop()} · 전체 ${(l/2**20).toFixed(0)} / ${(t/2**20).toFixed(0)}MB`}
 else if(p.status==='ready'||p.status==='done'){}}
-else if(d.type==='ready'){wake(false);m.kind==='chat'?chat():m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView()}
+else if(d.type==='ready'){wake(false);m.kind==='chat'?(st.agent?agent():chat()):m.kind==='tool'?toolView():m.kind==='sub'?subView():imgView()}
 else if(d.type==='err'){if(alt&&!tried){tried=1;w.terminate();st.files={};st.rows={};$('#fl').innerHTML='';$('#br i').style.width='0';$('#br').classList.add('ind');$('#ph').textContent='이전 버전 라이브러리로 다시 시도하는 중…';go(3)}else fail(d.msg)}
 };
 w.postMessage({type:'load',eng:m.engine||m.kind,repo:m.repo,dtype:m.dtype,cls:m.cls,f16:st.hw&&st.hw.f16,safe:st.safe,thr:cpuThr(),lib,dev:st.hw&&st.hw.ok?'webgpu':'wasm'});
@@ -576,6 +580,57 @@ else{if(!el._c){el._c=1;dt.open=false;el._d=el._t?((Date.now()-el._t)/1000).toFi
 el.lastChild.textContent=r.an||(r.open?'':'…');$('#msgs').scrollTop=1e9}
 function fin(el){const dt=el.firstChild;dt.classList.remove('on');if(dt.firstChild.textContent==='생각 중…')dt.firstChild.textContent='생각 과정'}
 function add(c,t){const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('#msgs').append(d);$('#msgs').scrollTop=1e9;return d}
+}
+// ===== 에이전트 모드 (실험): 로컬 대화 모델이 도구를 골라 쓰며 일을 처리 =====
+function agent(){
+if(!st.maxUser)st.max=autoMax(st.model);
+const NK='lais_notes',notes=()=>{try{return JSON.parse(localStorage.getItem(NK)||'[]')}catch(e){return[]}};
+const TOOLS={
+calc:{d:'계산',a:'{"expr":"수식"}',f:a=>{const e=String(a.expr||'').replace(/\^/g,'**').replace(/×/g,'*').replace(/÷/g,'/');
+if(!e||!/^[\d+\-*/%().\s]+$/.test(e))throw new Error('숫자와 + - * / % ^ ( ) 만 쓸 수 있어요');
+const v=Function('"use strict";return ('+e+')')();if(typeof v!=='number'||!isFinite(v))throw new Error('계산할 수 없는 식이에요');return String(+v.toPrecision(12))}},
+now:{d:'현재 날짜·시간',a:'{}',f:()=>new Date().toLocaleString('ko-KR',{dateStyle:'full',timeStyle:'medium'})},
+note_add:{d:'메모 저장',a:'{"text":"내용"}',f:a=>{const t=String(a.text||'').trim();if(!t)throw new Error('text가 비어 있어요');const n=notes();n.push({t,at:Date.now()});
+try{localStorage.setItem(NK,JSON.stringify(n.slice(-50)))}catch(e){throw new Error('이 브라우저에서는 메모를 저장할 수 없어요')}return '저장했어요 (총 '+Math.min(n.length,50)+'개)'}},
+note_list:{d:'저장된 메모 보기',a:'{}',f:()=>{const n=notes();return n.length?n.map((x,i)=>(i+1)+'. '+x.t).join('\n'):'저장된 메모가 없어요'}},
+device:{d:'이 컴퓨터의 GPU·메모리 정보',a:'{}',f:()=>{const h=st.hw||{};return `GPU: ${h.name}\nWebGPU: ${h.ok?'가능':'불가'}\n메모리: ${h.mem?'약 '+h.mem+'GB':'알 수 없음'}\n성능 등급: ${{low:'낮음',mid:'보통',high:'높음'}[h.tier]||'알 수 없음'}`}}};
+const SYS=`당신은 사용자의 일을 도와주는 에이전트입니다. 한국어로 답하세요.
+도구가 필요하면 아래 형식 한 줄만 출력하고 바로 멈추세요. 다른 말은 덧붙이지 마세요.
+<tool>{"name":"도구이름","args":{...}}</tool>
+도구 결과가 오면 그것을 바탕으로 다음 도구를 쓰거나 최종 답을 쓰세요. 도구가 필요 없으면 바로 답하세요. 계산은 직접 하지 말고 calc를 쓰세요.
+도구 목록:
+${Object.entries(TOOLS).map(([k,v])=>`- ${k} ${v.a}: ${v.d}`).join('\n')}`;
+const clean=t=>t.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<think>[\s\S]*$/,'').replace(/^[\s\S]*?<\/think>/,'').trim();
+const callOf=t=>{const m=t.match(/<tool>\s*([\s\S]*?)\s*(?:<\/tool>|$)/);if(!m)return null;try{const j=JSON.parse(m[1].trim());return j&&TOOLS[j.name]?{name:j.name,args:j.args||{}}:{bad:'없는 도구예요: '+(j&&j.name)}}catch(e){return{bad:'도구 호출 형식이 올바른 JSON이 아니에요'}}};
+let hist=[],stopped=false;
+app.innerHTML=head('에이전트 <span class="tag warn">실험</span>','<button class="btn ghost" id="nw">새 작업</button>')+`<div class="sub">쓸 수 있는 도구: ${Object.values(TOOLS).map(v=>v.d).join(' · ')}</div>
+<div id="msgs"></div><div class="comp"><textarea id="in" rows="1" placeholder="시킬 일을 적어 주세요. 예: 1234×5678 계산해서 메모해 줘"></textarea><button class="circ" id="sd" title="전송">↑</button></div>`;
+$('#bk').onclick=()=>pick('chat');
+const box=$('#msgs'),put=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;box.append(d);box.scrollTop=1e9;return d};
+const gen=el=>new Promise((res,rej)=>{let acc='',rq=0;const w=st.worker;
+const paint=()=>{rq=0;const c=clean(acc);el.textContent=c.includes('<tool>')?'🔧 도구를 고르는 중…':(c||'생각 중…');box.scrollTop=1e9};
+w.onmessage=({data:d})=>{if(d.type==='tok'){acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}
+else if(d.type==='done'){cancelAnimationFrame(rq);res(clean(acc))}
+else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
+w.postMessage({type:'chat',noThink:st.model.noThink,max:st.max,gap:st.safe?gapMs(st.model):0,messages:[{role:'system',content:SYS},...hist]})});
+const run=async t=>{st.busy=true;stopped=false;$('#sd').textContent='■';wake(true);hist.push({role:'user',content:t});
+try{for(let i=0;i<6&&!stopped;i++){
+const el=put('m a','…'),out=await gen(el),c=callOf(out);
+if(stopped){el.textContent=clean(out)||'(중단됨)';break}
+if(!c){el.textContent=out||'(답이 비어 있어요)';hist.push({role:'assistant',content:out});break}
+el.remove();hist.push({role:'assistant',content:out});
+let r;if(c.bad)r='오류: '+c.bad;else{try{r=TOOLS[c.name].f(c.args)}catch(e){r='오류: '+e.message}}
+put('tl','🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args).length?' '+JSON.stringify(c.args):'')+'\n→ '+r);
+hist.push({role:'user',content:'[도구 결과] '+r});
+if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
+catch(e){put('m a','오류: '+e.message);hist.pop()}
+st.busy=false;wake(false);$('#sd').textContent='↑';if(st.worker)st.worker.onmessage=null};
+const send=()=>{if(st.busy){stopped=true;st.worker&&st.worker.postMessage({type:'stop'});return}
+const t=$('#in').value.trim();if(!t)return;$('#in').value='';$('#in').style.height='auto';put('m u',t);run(t)};
+$('#sd').onclick=send;
+$('#nw').onclick=()=>{if(st.busy){stopped=true;st.worker&&st.worker.postMessage({type:'stop'});return}hist=[];box.innerHTML=''};
+$('#in').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'};
+$('#in').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
 }
 function imgView(){
 app.innerHTML=head('이미지 생성')+`<div class="two">
