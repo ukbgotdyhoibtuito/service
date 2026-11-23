@@ -964,7 +964,6 @@ const SYS=`당신은 친절한 한국어 AI 어시스턴트입니다. 평소에�
 도구 결과가 오면 그것을 바탕으로 짧게 답하세요. 결과 이미지·파일은 화면에 자동으로 보입니다. 첨부 파일은 [첨부 #번호: …]로 표시됩니다.
 도구:
 ${Object.entries(TOOLS).map(([k,v])=>`- ${k} ${v.a}: ${v.d}`).join('\n')}`;
-const SHOT=;
 const SHOT=[{role:'user',content:'안녕'},{role:'assistant',content:'안녕하세요! 무엇을 도와드릴까요?'},{role:'user',content:'12 곱하기 34 계산해 줘'},{role:'assistant',content:'<tool>{"name":"calc","args":{"expr":"12*34"}}</tool>'},{role:'user',content:'[도구 결과] 408'},{role:'assistant',content:'12 × 34 = 408이에요.'},{role:'user',content:'웃는 고양이를 이미지로 만들어줘'},{role:'assistant',content:'<tool>{"name":"image_generate","args":{"prompt":"a smiling cat, high quality illustration"}}</tool>'},{role:'user',content:'[도구 결과] 이미지를 만들었어요: 첨부 #1'},{role:'assistant',content:'이미지를 만들었어요!'},{role:'user',content:'앞으로 개발 관련 설명은 한국어로 짧게 해줘.'},{role:'assistant',content:'<tool>{"name":"memory_search","args":{"query":"개발 설명 언어와 길이 선호"}}</tool>'},{role:'user',content:'[도구 결과] 관련 기억을 찾지 못했어요'},{role:'assistant',content:'<tool>{"name":"memory_save","args":{"group":"나","title":"개발 설명 방식","summary":"개발 관련 설명은 한국어로 짧고 간결하게 작성하는 것을 선호함.","content":"개발 관련 설명은 한국어로 짧고 간결하게 작성하는 것을 선호함."}}</tool>'},{role:'user',content:'[도구 결과] 개별 기억 저장 완료'},{role:'assistant',content:'알겠습니다. 앞으로 반영하겠습니다.'}];
 const dump=t=>!/<tool>/.test(t)&&/"args"\s*:/.test(t)&&/"name"\s*:/.test(t); // 도구 목록을 그대로 읊은 답
 const clean=t=>t.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<think>[\s\S]*$/,'').replace(/^[\s\S]*?<\/think>/,'').trim();
