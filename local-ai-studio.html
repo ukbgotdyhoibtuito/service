@@ -123,13 +123,30 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}.bar.ind i{animation:none;width:100%;opacity:.4}}
 .lnk{background:none;border:0;cursor:pointer;color:var(--sub);font-size:12px;padding:6px 10px;opacity:.65;text-decoration:underline;text-underline-offset:3px}.lnk:hover{opacity:1;color:var(--tx)}
+.lgo{display:flex;align-items:center;gap:6px;font-size:18px;font-weight:700;letter-spacing:-.02em;padding:2px 6px 8px;white-space:nowrap}.lgo i{font-style:normal;color:var(--ac)}
+.lg2{display:none}
+.am #msgs,.am #pe,.am .comp,.am .disc{width:100%;max-width:760px;margin-left:auto;margin-right:auto}
+.am #msgs{gap:20px;padding:18px 0 10px}
+.am .m.a{background:none;border:0;border-radius:0;padding:0;max-width:100%;line-height:1.75}
+.am .m.a.card{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:14px;max-width:100%}
+.am .m.u{border-radius:18px 18px 4px 18px;padding:10px 16px;max-width:82%}
+.am .m code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background:color-mix(in srgb,var(--tx) 8%,transparent);border-radius:5px;padding:1px 5px}
+.am .m pre{margin:8px 0;background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;overflow:auto;white-space:pre;line-height:1.55}.am .m pre code{background:none;padding:0}
+.am .comp{border-radius:26px;padding:8px 8px 8px 10px;gap:6px;margin-bottom:0}
+.am .comp textarea{padding:9px 4px}
+.am .disc{text-align:center;font-size:12px;color:var(--sub);padding:8px 0 2px;line-height:1.5}
+.empty{margin:auto;text-align:center;padding:20px 0}.empty h2{font-size:26px;margin:8px 0 18px;letter-spacing:-.02em}
+.empty .lgo{justify-content:center;font-size:20px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px;margin:0 auto}
+.chip{background:var(--card);border:1px solid var(--ln);border-radius:99px;padding:8px 16px;cursor:pointer;font-size:14px;transition:border-color .15s,background-color .15s}.chip:hover{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 5%,var(--card))}
+.am .top select{border-radius:99px;padding:6px 12px;font-size:13px}
 .ag{display:flex;gap:14px;height:calc(100vh - 40px);height:calc(100dvh - 40px)}
 .as{width:230px;flex:none;display:flex;flex-direction:column;gap:8px;border-right:1px solid var(--ln);padding-right:12px;min-height:0}
 .cl{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
 .ci{display:flex;align-items:center;gap:4px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}.ci:hover,.ci.on{background:color-mix(in srgb,var(--ac) 10%,transparent)}
 .ci span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci button{background:none;border:0;color:var(--sub);cursor:pointer;opacity:0;padding:0 4px}.ci:hover button{opacity:1}
 .am{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}#mb{display:none}
-@media(max-width:700px){.ag{gap:0}.as{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:20;padding:16px 12px;transform:translateX(-105%);transition:transform .2s}.as.on{transform:none;border-right:1px solid var(--ln)}#mb{display:inline-block}.ci button{opacity:1}}
+@media(max-width:700px){.ag{gap:0}.as{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:20;padding:16px 12px;transform:translateX(-105%);transition:transform .2s}.as.on{transform:none;border-right:1px solid var(--ln)}#mb{display:inline-block}.lg2{display:flex;padding:0}.am .m.u{max-width:90%}.ci button{opacity:1}}
 .tl{align-self:flex-start;max-width:92%;font-size:12.5px;color:var(--sub);border-left:2px solid var(--ln);padding:2px 10px;white-space:pre-wrap;word-break:break-word}
 .pm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .pm button{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--ln);border-radius:10px;background:none;cursor:pointer;transition:border-color .15s,background-color .15s}
@@ -600,10 +617,11 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 window.agClean=()=>{for(const k of ['c','x']){if(W[k]){try{W[k].terminate()}catch(e){}W[k]=null;W[k+'m']=null}}busy=false;wake(false);app.style.maxWidth='';window.agClean=null};
 app.style.maxWidth='1100px';
 // ---------- 화면 ----------
-app.innerHTML=`<div class="ag"><aside class="as" id="as"><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="ho">← 처음으로</button></aside>
-<section class="am"><div class="top" style="margin-bottom:6px"><button class="btn ghost" id="mb" aria-label="채팅 목록">☰</button><b class="grow" id="ct" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">새 채팅</b><span class="tag warn">실험</span><select id="ms" title="대화 모델" style="max-width:190px"></select></div>
+app.innerHTML=`<div class="ag"><aside class="as" id="as"><div class="lgo"><i>✳</i> Local AI Studio</div><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="ho">← 처음으로</button></aside>
+<section class="am"><div class="top" style="margin-bottom:6px"><button class="btn ghost" id="mb" aria-label="채팅 목록">☰</button><div class="lgo lg2"><i>✳</i></div><b class="grow" id="ct" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">새 채팅</b><span class="tag warn">실험</span><select id="ms" title="대화 모델" style="max-width:190px"></select></div>
 <div id="msgs"></div><div id="pe" class="row" style="flex-wrap:wrap;gap:6px"></div>
-<div class="comp"><button class="circ" id="pa" title="파일 첨부 (이미지·오디오·영상)" style="background:var(--bg);color:var(--tx);border:1px solid var(--ln)">＋</button><textarea id="in" rows="1" placeholder="무엇을 할까요? 이미지·오디오·영상도 첨부할 수 있어요"></textarea><button class="circ" id="sd" title="전송">↑</button></div>
+<div class="comp"><button class="circ" id="pa" title="파일 첨부 (이미지·오디오·영상)" style="background:var(--bg);color:var(--tx);border:1px solid var(--ln)">＋</button><textarea id="in" rows="1" placeholder="메시지를 입력하세요"></textarea><button class="circ" id="sd" title="전송">↑</button></div>
+<div class="disc">Local AI Studio의 AI도 실수할 수 있어요. 중요한 내용은 꼭 확인해 주세요.<br>모델 다운로드 외에는 모든 처리가 내 컴퓨터 안에서 이뤄져요.</div>
 <input type="file" id="fi" accept="image/*,audio/*,video/*" multiple hidden></section></div>`;
 const box=$('#msgs'),sb=()=>{if(box.scrollHeight-box.scrollTop-box.clientHeight<90)box.scrollTop=1e9},put=(c,t)=>{const d=document.createElement('div');d.className=c;if(t!=null)d.textContent=t;box.append(d);sb();return d};
 $('#ho').onclick=home;$('#mb').onclick=()=>$('#as').classList.toggle('on');
@@ -622,12 +640,15 @@ else if(a.type==='audio'||a.type==='video'){e=document.createElement(a.type);e.c
 else{e=document.createElement('div')}
 const row=document.createElement('div');row.className='sub';row.style.marginTop='4px';
 const dl=document.createElement('a');dl.href=a.url;dl.download=a.name;dl.textContent='⬇ #'+a.n+' '+a.name+' 저장';dl.style.color='var(--ac)';row.append(dl);host.append(e,row)};
+const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const md=x=>{const parts=esc(x).split(/```[^\n]*\n?/);return parts.map((t,i)=>i%2?'<pre><code>'+t.replace(/\n$/,'')+'</code></pre>':t.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>')).join('')};
 function drawMsg(m){const d=document.createElement('div');
-if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d.className='tl';d.textContent=m.t}else{d.className='m a';d.textContent=m.t}
+if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d.className='tl';d.textContent=m.t}else{d.className='m a';d.innerHTML=md(m.t)}
 if(m.att&&m.att.length){const h=document.createElement('div');h.style.marginTop='6px';for(const n of m.att)drawAtt(h,ATT[chat.id+':'+n]);d.append(h)}return d}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
 if(chat){for(const m of chat.msgs)if(!m.h)box.append(drawMsg(m))}
-else box.innerHTML='<div class="sub" style="margin:auto;text-align:center;line-height:1.8">🧪 에이전트 모드<br>이미지 생성 · 배경 제거 · 업스케일 · 자막 추출 · 계산 · 메모를<br>대화하며 시킬 수 있어요. 필요한 모델은 허락을 받고 받아요.</div>';
+else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2><div class="chips">'+['웃는 고양이 그림 그려줘','1234 × 5678 계산해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
+box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#in').value=b.textContent.replace(/ \(.*\)$/,'');$('#in').focus();$('#in').oninput({target:$('#in')})})}
 box.scrollTop=1e9;drawList();drawModels()}
 function drawList(){const l=$('#cl');l.innerHTML='';for(const c of S.chats){const r=document.createElement('div');r.className='ci'+(chat&&c.id===chat.id?' on':'');
 const s=document.createElement('span');s.textContent=c.title;const x=document.createElement('button');x.textContent='✕';x.title='삭제';
@@ -652,7 +673,7 @@ for(const m of list){const f=fit(m);if(f==='ok'||(f==='low'&&st.hw.ok))ok.push({
 if(!ok.length){put('m a',`${label}에 쓸 수 있는 모델이 이 기기에서는 없어요. (WebGPU가 필요한 모델일 수 있어요)`);return null}
 const good=ok.filter(x=>x.f==='ok').map(x=>x.m),h=st.hw||{};
 const rec=label==='대화'?([...good].filter(m=>m.gb<=(h.cap||1.5)).pop()||good[0]):(good.find(m=>m.best)||good[0]||ok[0].m);
-return new Promise(res=>{const d=put('m a');d.innerHTML=`<b>🔓 모델 다운로드 허락이 필요해요</b><div class="sub" style="margin:4px 0 8px">${label} 모델을 쓰려고 하는데 받아 둔 모델이 없어요. 내 컴퓨터(브라우저)에 저장되고, 이후엔 인터넷 없이 써요.</div>
+return new Promise(res=>{const d=put('m a card');d.innerHTML=`<b>🔓 모델 다운로드 허락이 필요해요</b><div class="sub" style="margin:4px 0 8px">${label} 모델을 쓰려고 하는데 받아 둔 모델이 없어요. 내 컴퓨터(브라우저)에 저장되고, 이후엔 인터넷 없이 써요.</div>
 <select class="dsel" style="width:100%">${ok.map(x=>`<option value="${x.m.id}" ${x.m===rec?'selected':''}>${x.m.name} · ${fmt(x.m.gb)}${x.m===rec?' (추천)':''}${x.f!=='ok'?' · 사양 부족 가능':''}${x.c?' · 저장됨':''}</option>`).join('')}</select>
 <div class="row" style="margin-top:8px"><button class="btn dy">다운로드</button><button class="btn ghost dn">거절</button></div>`;
 const fin=(v,t)=>{d.querySelector('.row').replaceWith(Object.assign(document.createElement('div'),{className:'sub',textContent:t}));d.querySelector('select').disabled=true;res(v)};
@@ -734,7 +755,7 @@ const dump=t=>!/<tool>/.test(t)&&/"args"\s*:/.test(t)&&/"name"\s*:/.test(t); // 
 const clean=t=>t.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<think>[\s\S]*$/,'').replace(/^[\s\S]*?<\/think>/,'').trim();
 const callOf=t=>{const m=t.match(/<tool>\s*([\s\S]*?)\s*(?:<\/tool>|$)/);if(!m)return null;try{const j=JSON.parse(m[1].trim());return j&&TOOLS[j.name]?{name:j.name,args:(j.args&&typeof j.args==='object')?j.args:{}}:{bad:'없는 도구예요: '+(j&&j.name)}}catch(e){return{bad:'도구 호출 형식이 올바른 JSON이 아니에요'}}};
 const history=()=>{const h=[];for(const m of chat.msgs){if(m.r==='u')h.push({role:'user',content:m.llm||m.t});else if(m.r==='a')h.push({role:'assistant',content:m.t});else if(m.r==='tool')h.push({role:'user',content:'[도구 결과] '+m.res})}return h.slice(-24)};
-const llm=(w,m,el)=>new Promise((res,rej)=>{let acc='',rq=0;const paint=()=>{rq=0;const c=clean(acc);el.textContent=c.includes('<tool>')?'🔧 도구를 고르는 중…':(c||'생각 중…');sb()};
+const llm=(w,m,el)=>new Promise((res,rej)=>{let acc='',rq=0;const paint=()=>{rq=0;const c=clean(acc);if(c.includes('<tool>'))el.textContent='🔧 도구를 고르는 중…';else if(c)el.innerHTML=md(c);else el.textContent='생각 중…';sb()};
 w.onmessage=({data:d})=>{if(d.type==='tok'){acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);res(clean(acc))}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
 w.postMessage({type:'chat',noThink:m.noThink,max:st.maxUser?st.max:autoMax(m),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:SYS},...SHOT,...history()]})});
 // ---------- 대화 진행 ----------
@@ -744,9 +765,9 @@ async function turn(){const m=chatModel();
 for(let i=0;i<6&&!stopped;i++){
 const sy=status();let w;try{w=await getW(m,sy)}finally{sy.done()}
 const el=put('m a','…'),out=await llm(w,m,el),c=callOf(out);
-if(stopped){el.textContent=out||'(중단됨)';if(out)chat.msgs.push({r:'a',t:out});return}
+if(stopped){el.innerHTML=md(out||'(중단됨)');if(out)chat.msgs.push({r:'a',t:out});return}
 if(!c&&dump(out)){el.remove();put('tl','모델이 도구 안내를 그대로 읊어서 답을 버렸어요. 다시 말해 보거나 더 큰 모델로 바꿔 보세요.');return}
-if(!c){el.textContent=out||'(답이 비어 있어요)';chat.msgs.push({r:'a',t:out||'(답이 비어 있어요)'});return}
+if(!c){el.innerHTML=md(out||'(답이 비어 있어요)');chat.msgs.push({r:'a',t:out||'(답이 비어 있어요)'});return}
 el.remove();chat.msgs.push({r:'a',t:out,h:1});
 const sx=status();let r,att=[];
 if(c.bad)r='오류: '+c.bad;else{try{const x=await TOOLS[c.name].f(c.args,sx);if(x&&typeof x==='object'){r=x.text;att=x.att||[]}else r=String(x)}catch(e){r='오류: '+e.message}}
@@ -757,7 +778,7 @@ const t=$('#in').value.trim();if(!t&&!pend.length)return;
 let m=chatModel();if(!m){const c=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(!c)return;m=c;S.model=c.id}
 busy=true;stopped=false;$('#sd').textContent='■';
 if(!chat){chat={id:uid(),title:'새 채팅',msgs:[],model:m.id,an:0};S.chats.unshift(chat);S.cur=chat.id}else chat.model=m.id;
-if(box.querySelector('.sub[style*="margin:auto"]'))box.innerHTML='';
+if(box.querySelector('.empty'))box.innerHTML='';
 const ids=[],tags=[];for(const f of pend){try{const a=await addAtt(f.blob,f.name,f.type);ids.push(a.n);tags.push(tag(a))}catch(e){put('tl','첨부 실패: '+e.message)}}
 pend=[];drawPend();$('#in').value='';$('#in').style.height='auto';
 const um={r:'u',t:t||'(첨부 파일)',att:ids,llm:(t||'')+(tags.length?'\n'+tags.join('\n'):'')};
