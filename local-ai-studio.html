@@ -907,7 +907,20 @@ return{text:'고쳤어요: '+r.it.o+' → '+r.it.d.t,items:[r.it],k:'upd'}}},
 memory_read:{d:'메모리 읽기: 기억 목록의 주제 하나를 열어 세부 내용을 봄',a:'{"topic":"기억 목록의 주제 이름"}',f:a=>{if(!memOn())return'메모리를 쓰지 않는 상태예요';const q=String(a.topic??a.file??a.name??'').trim();
 const f=q&&M.files.find(x=>x.name===q)||(q.length>=2&&M.files.find(x=>x.name.includes(q)||q.includes(x.name)));if(!f)throw new Error('그런 주제가 없어요. 기억 목록: '+(M.files.map(x=>x.name).join(', ')||'(비어 있음)'));
 return '['+f.name+']\n'+f.det.map(d=>'- '+d.t).join('\n')}},
-device:{d:'사용자 기기 정보: GPU·메모리·성능 등급',a:'{}',f:()=>{const h=st.hw||{};return `GPU: ${h.name}\nWebGPU: ${h.ok?'가능':'불가'}\n메모리: ${h.mem?'약 '+h.mem+'GB':'알 수 없음'}\n성능 등급: ${{low:'낮음',mid:'보통',high:'높음'}[h.tier]||'알 수 없음'}`}}};
+device:{d:'사용자 기기 정보: GPU·CPU 코어·메모리·운영체제·브라우저·화면·네트워크·배터리·저장공간 등 브라우저가 알려 주는 모든 정보',a:'{}',f:async()=>{const h=st.hw||{},n=navigator,L=[],add=(k,v)=>{if(v!=null&&v!==''&&v!==false)L.push(k+': '+v)};
+add('GPU',h.name);add('WebGPU',h.ok?'가능':'불가');
+if(h.ok){add('GPU 연산 성능(간이 측정)',h.gf?'약 '+Math.round(h.gf)+' GFLOPS':null);add('셰이더 f16 지원',h.f16?'예':'아니오');add('GPU 최대 버퍼',h.buf?h.buf.toFixed(1)+'GB':null);add('이 기기 권장 모델 크기',h.cap?'약 '+h.cap+'GB 이하':null);
+try{const a=await n.gpu.requestAdapter({powerPreference:'high-performance'});if(a){add('GPU 스토리지 버퍼 한도',(a.limits.maxStorageBufferBindingSize/2**30).toFixed(1)+'GB');add('GPU 지원 기능',a.features.size+'개');add('GPU 종류',a.isFallbackAdapter?'소프트웨어(폴백)':'하드웨어')}}catch(e){}}
+add('성능 등급',{low:'낮음',mid:'보통',high:'높음'}[h.tier]);
+add('CPU 논리 코어',n.hardwareConcurrency);add('메모리(브라우저 보고값, 보통 최대 8GB까지만 표시)',n.deviceMemory?'약 '+n.deviceMemory+'GB':null);
+const ud=n.userAgentData;if(ud){try{const e=await ud.getHighEntropyValues(['platformVersion','architecture','bitness','model']);add('운영체제',ud.platform+(e.platformVersion?' '+e.platformVersion:''));add('CPU 구조',(e.architecture||'')+(e.bitness?' '+e.bitness+'비트':''));add('기기 모델',e.model)}catch(e){add('운영체제',ud.platform)}}else add('운영체제(추정)',n.platform);
+add('브라우저',ud&&ud.brands?ud.brands.filter(b=>!/not.?a.?brand/i.test(b.brand)).map(b=>b.brand+' '+b.version).join(', '):n.userAgent);add('모바일 기기',(ud?ud.mobile:isMobile)?'예':'아니오');
+add('화면',screen.width+'×'+screen.height+' (배율 '+devicePixelRatio+', '+screen.colorDepth+'비트 색)');add('브라우저 창',innerWidth+'×'+innerHeight);add('터치',n.maxTouchPoints?'지원 ('+n.maxTouchPoints+'점)':'없음');add('다크 모드',matchMedia('(prefers-color-scheme: dark)').matches?'켜짐':'꺼짐');
+add('언어',n.language);add('시간대',Intl.DateTimeFormat().resolvedOptions().timeZone);
+const c=n.connection;if(c)add('네트워크',[c.effectiveType,c.downlink&&c.downlink+'Mbps',c.rtt!=null&&c.rtt+'ms',c.saveData?'데이터 절약 모드':null].filter(Boolean).join(', '));add('온라인',n.onLine?'예':'아니오');
+try{if(n.getBattery){const b=await n.getBattery();add('배터리',Math.round(b.level*100)+'%'+(b.charging?' (충전 중)':''))}}catch(e){}
+try{if(n.storage&&n.storage.estimate){const e=await n.storage.estimate();add('브라우저 저장공간','사용 '+(e.usage/2**30).toFixed(2)+'GB / 한도 약 '+Math.round(e.quota/2**30)+'GB')}}catch(e){}
+return L.join('\n')+'\n(브라우저가 알려 주는 정보만이에요. CPU 모델명·RAM 총량·디스크 같은 건 알 수 없어요.)'}}};
 const MEMT=['remember','forget','memory_update'],SAFE=['calc','device','memory_read','image_generate','remove_background','upscale_image','remember','forget','memory_update']; // 결과에 외부 글(자막 등)이 섞이지 않는 도구
 const sysBase=()=>`당신은 Local AI Studio의 에이전트입니다. 사용자 컴퓨터(브라우저) 안에서 돌아가며, 아래 도구를 직접 쓸 수 있습니다.
 오늘 날짜와 시각(사용자 기기 기준): ${new Date().toLocaleString('ko-KR',{dateStyle:'full',timeStyle:'short'})}
