@@ -149,7 +149,7 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .empty .lgo{justify-content:center;font-size:20px}
 .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px;margin:0 auto}
 .chip{background:var(--card);border:1px solid var(--ln);border-radius:99px;padding:8px 16px;cursor:pointer;font-size:14px;transition:border-color .15s,background-color .15s}.chip:hover{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 5%,var(--card))}
-.am .top select{border:0;background:transparent;color:var(--tx);border-radius:10px;padding:7px 8px;font-size:15px;font-weight:600;max-width:240px;cursor:pointer;width:auto;field-sizing:content}.am .top select:hover{background:var(--card)}.am .top .btn{border:0;background:none;padding:6px 10px;min-height:0;color:var(--sub)}.am .top .btn:hover{background:var(--card)}.am #ic{display:flex;align-items:center;gap:5px;border-radius:10px}.am #ic.on{color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent);border:0}.am #ic.on::after{content:'시크릿';font-size:12.5px;font-weight:600}.xp{font-size:11px;font-weight:500;color:var(--sub);margin-left:2px}
+.am .top select{border:0;background:transparent;color:var(--tx);border-radius:10px;padding:7px 8px;font-size:15px;font-weight:600;max-width:240px;cursor:pointer;width:auto;field-sizing:content}.am .top select:hover{background:var(--card)}.am .top select option.nx{color:var(--sub)}.am .top .btn{border:0;background:none;padding:6px 10px;min-height:0;color:var(--sub)}.am .top .btn:hover{background:var(--card)}.am #ic{display:flex;align-items:center;gap:5px;border-radius:10px}.am #ic.on{color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent);border:0}.am #ic.on::after{content:'시크릿';font-size:12.5px;font-weight:600}.xp{font-size:11px;font-weight:500;color:var(--sub);margin-left:2px}
 .ag{display:flex;gap:14px;height:calc(100vh - 40px);height:calc(100dvh - 40px)}
 .as{width:230px;flex:none;display:flex;flex-direction:column;gap:8px;border-right:1px solid var(--ln);padding-right:12px;min-height:0}
 .cl{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
@@ -801,14 +801,25 @@ $('#ic').onclick=()=>{if(busy||(chat&&chat.msgs.length))return;if(chat)chat.inc=
 $('#nc').onclick=()=>{if(busy)return;chat=null;S.cur=null;incNext=false;renderChat();$('#as').classList.remove('on');$('#in').focus()};
 // ---------- 모델 ----------
 const chatModel=()=>{const id=(chat&&chat.model)||S.model;return MODELS.find(m=>m.id===id&&m.kind==='chat')||null};
-async function drawModels(){const sel=$('#ms'),urls=await cacheUrls(),cur=chatModel(),have=[];
-for(const m of MODELS.filter(x=>x.kind==='chat'))if(await cached(m,urls)||(cur&&cur.id===m.id))have.push(m);
-sel.innerHTML=(have.length?'':'<option value="">모델 없음</option>')+have.map(m=>`<option value="${m.id}" ${cur&&cur.id===m.id?'selected':''}>${m.name}</option>`).join('')+'<option value="__dl">＋ 다른 모델 받기…</option>';
-if(!cur&&have.length){const h=st.hw||{},b=[...have].filter(m=>m.gb<=(h.cap||1.5)).pop()||have[0];setModel(b)}}
+async function drawModels(){const sel=$('#ms'),urls=await cacheUrls(),cur=chatModel(),rows=[];
+for(const m of MODELS.filter(x=>x.kind==='chat'))rows.push({m,c:await cached(m,urls),f:fit(m)});
+const can=r=>r.f==='ok'||(r.f==='low'&&st.hw.ok);
+sel.innerHTML=(cur?'':'<option value="" disabled selected>모델 선택</option>')+rows.map(r=>`<option value="${r.m.id}" class="${r.c?'':'nx'}" ${cur&&cur.id===r.m.id?'selected':''} ${can(r)||r.c?'':'disabled'}>${r.m.name}${r.c?'':' · '+(can(r)?fmt(r.m.gb)+' · 미설치':'이 기기에선 어려움')}</option>`).join('');
+const have=rows.filter(r=>r.c).map(r=>r.m);
+if(!cur&&have.length){const h=st.hw||{},b=have.filter(m=>m.gb<=(h.cap||1.5)).pop()||have[0];setModel(b)}}
 function setModel(m){S.model=m.id;if(chat)chat.model=m.id;save();drawModels()}
-$('#ms').onchange=async e=>{if(busy){drawModels();return}const v=e.target.value;
-if(v==='__dl'){const m=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(m){try{await getW(m,status());setModel(m)}catch(er){put('m a','오류: '+er.message)}}drawModels();return}
-const m=MODELS.find(x=>x.id===v);if(m)setModel(m)};
+// 설치 안 된 대화 모델을 고르면 채팅이 아니라 팝업으로 허락을 묻고 진행 상황도 팝업에 보여 줌 (대화에 끼어들지 않음)
+function pickDl(m){return new Promise(res=>{const dl=document.createElement('dialog');let lock=false;dl.oncancel=e=>{if(lock)e.preventDefault()};
+dl.innerHTML=`<b>모델 다운로드</b><div style="font-weight:600;margin-top:10px"></div><div class="sub" style="margin:6px 0 12px">아직 받지 않은 모델이에요. 내 컴퓨터(브라우저)에 저장되고, 이후엔 인터넷 없이 써요.</div><div class="pg" hidden><div class="sub pt"></div><div class="bar" style="height:4px;margin:6px 0 0"><i></i></div></div><div class="row pb" style="margin-top:14px;justify-content:flex-end"><button class="btn ghost dn">취소</button><button class="btn dy">다운로드</button></div>`;
+dl.children[1].textContent=m.name+' · '+fmt(m.gb);document.body.append(dl);const q=x=>dl.querySelector(x),fin=v=>{dl.close();dl.remove();res(v)};
+q('.dn').onclick=()=>fin(false);dl.onclose=()=>{if(dl.isConnected)fin(false)};
+q('.dy').onclick=async()=>{if(isMobile&&!confirm(`모바일 환경으로 보여요. 약 ${fmt(m.gb)}를 받습니다. 데이터 요금에 주의하세요. 계속할까요?`))return;
+lock=true;q('.pb').hidden=true;q('.pg').hidden=false;const bar=q('.bar'),pt=q('.pt');bar.classList.add('ind');
+try{await getW(m,(t,p)=>{pt.textContent=t;if(p!=null){bar.classList.remove('ind');bar.firstChild.style.width=p+'%'}else bar.classList.add('ind')});lock=false;setModel(m);fin(true)}
+catch(e){lock=false;bar.classList.remove('ind');pt.textContent='오류: '+errText(e.message);q('.pb').hidden=false;q('.dy').remove();q('.dn').textContent='닫기'}};
+dl.showModal()})}
+$('#ms').onchange=async e=>{if(busy){drawModels();return}const m=MODELS.find(x=>x.id===e.target.value);if(!m){drawModels();return}
+if(await cached(m))setModel(m);else{await pickDl(m);drawModels()}};
 // ---------- 상태 표시줄 / 다운로드 허락 카드 ----------
 function status(){const d=put('tl');d.innerHTML='<span></span><div class="bar" style="height:4px;margin:4px 0 0"><i></i></div>';const sp=d.firstChild,bar=d.lastChild;bar.classList.add('ind');
 const f=(t,p)=>{sp.textContent=t;if(p!=null){bar.classList.remove('ind');bar.firstChild.style.width=p+'%'}else bar.classList.add('ind');sb()};f.done=()=>d.remove();return f}
@@ -962,7 +973,7 @@ if(!W.c&&DONE[c.name]&&att.length&&!/그리고|그다음|그 다음|하고|한 �
 if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
 const send=async()=>{if(busy){if(!stopped)put('tl','중단하는 중… 진행 중인 이미지·자막 작업은 끝나야 멈춰요');stopped=true;W.c&&W.c.postMessage({type:'stop'});return}
 const t=$('#in').value.trim();if(!t&&!pend.length)return;
-let m=chatModel();if(!m){const c=await askDl(MODELS.filter(x=>x.kind==='chat'),'대화');if(!c)return;m=c;S.model=c.id}
+let m=chatModel();if(!m){const h=st.hw||{},ok=MODELS.filter(x=>x.kind==='chat'&&fit(x)==='ok'),rec=ok.filter(x=>x.gb<=(h.cap||1.5)).pop()||ok[0];if(!rec){put('tl','이 기기에서 쓸 수 있는 대화 모델이 없어요. (WebGPU가 필요해요)');return}if(!(await pickDl(rec)))return;m=chatModel();if(!m)return}
 busy=true;stopped=false;$('#sd').textContent='■';
 if(!chat){chat={id:uid(),title:'새 채팅',msgs:[],model:m.id,an:0,inc:incNext};incNext=false;S.chats.unshift(chat);S.cur=chat.id}else chat.model=m.id;
 if(box.querySelector('.empty'))box.innerHTML='';
