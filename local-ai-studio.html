@@ -202,6 +202,13 @@ dialog.mdl{width:min(94vw,780px);max-width:none;height:min(82vh,680px);padding:0
 .hws>div{display:flex;flex-direction:column;gap:1px;min-width:0}.hws .sub{font-size:12px}.hws b{font-size:14px;font-weight:600;white-space:nowrap}
 .lb{display:flex;align-items:center;gap:6px}.mt{display:flex;align-items:center;gap:2px}.mt i{width:8px;height:4px;border-radius:2px;background:var(--ln)}
 .mt.t1 i:nth-child(-n+1),.mt.t2 i:nth-child(-n+2),.mt.t3 i{background:var(--ok)}.mt.t1 i:nth-child(1){background:var(--warn)}
+.cb{margin:8px 0;border:1px solid var(--ln);border-radius:10px;overflow:hidden;background:var(--card);white-space:normal}
+.cb .ch{display:flex;align-items:center;gap:6px;padding:4px 8px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--ln)}
+.cb .ch button{border:0;background:none;color:var(--ac);font:inherit;cursor:pointer;padding:2px 6px;border-radius:6px}.cb .ch button:hover{background:var(--ln)}.cb .ch button:disabled{opacity:.5;cursor:default}
+.cb pre{margin:0;padding:10px 12px;overflow:auto;max-height:360px;font-size:12.5px;white-space:pre;background:none;border:0}
+.co{margin:-4px 0 8px;padding:8px 12px;border-radius:10px;background:var(--card);border:1px solid var(--ln);font:12.5px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word;align-self:stretch}.co.bad{color:var(--bad)}
+.acts{display:flex;gap:6px;margin-top:-10px}.acts button,.uw .ed{border:0;background:none;color:var(--sub);font-size:12px;cursor:pointer;padding:3px 8px;border-radius:8px}.acts button:hover,.uw .ed:hover{background:var(--ln);color:var(--tx)}.uw .ed{align-self:flex-end}
+dialog.pvd{width:min(1000px,94vw);height:80vh;border:1px solid var(--ln);border-radius:14px;padding:0;background:var(--bg);color:var(--tx);flex-direction:column;overflow:hidden}dialog.pvd[open]{display:flex}dialog.pvd iframe{flex:1;border:0;background:#fff}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -356,8 +363,9 @@ for(let i=0;i<n;i++){
 const ch=a.subarray(i*WIN,Math.min((i+1)*WIN,a.length));
 if(ch.length<8000){postMessage({type:'aseg',i,n,off:i*30,chunks:[]});continue}
 const o={return_timestamps:true,task:'transcribe'};if(d.lang)o.language=d.lang;
-const r=await pipe(ch,o);
+const t1=performance.now(),r=await pipe(ch,o);
 postMessage({type:'aseg',i,n,off:i*30,chunks:(r.chunks||[]).map(c=>({s:c.timestamp[0],e:c.timestamp[1],t:c.text}))});
+if(d.duty)await new Promise(q=>setTimeout(q,(performance.now()-t1)*d.duty));
 }
 postMessage({type:'adone'});
 }else if(d.type==='tool'){
@@ -721,6 +729,7 @@ if(f){const h=document.createElement('div');h.className='md';h.innerHTML='<h2></
 h.querySelector('h2').textContent=f.name;if(f.sec==='area'){const rn=document.createElement('button');rn.className='btn ghost';rn.textContent='이름 바꾸기';rn.style.cssText='padding:2px 10px;min-height:0;font-size:12px;margin-top:6px';rn.onclick=()=>{const v=(prompt('주제 이름',f.name)||'').replace(/\s+/g,' ').trim().slice(0,20);if(!v||v===f.name)return;if(M.files.some(x=>x!==f&&x.sec==='area'&&x.name===v)){alert('같은 이름의 주제가 이미 있어요');return}f.name=v;f.at=Date.now();mSave();draw()};h.querySelector('h2').after(rn)}h.querySelector('.v1').textContent=new Date(f.at).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});h.querySelector('.v2').textContent=mSum(f);
 const ul=h.querySelector('ul');for(const d of f.det){const li=document.createElement('li'),sp=document.createElement('span'),x=document.createElement('button');sp.textContent=d.t;x.textContent='✕';x.title='삭제';
 x.onclick=()=>{f.det=f.det.filter(y=>y!==d);if(!f.det.length){M.files=M.files.filter(y=>y!==f);cur=null}else f.at=Date.now();mSave();draw()};li.append(sp,x);ul.append(li)}body.append(h);return}
+const pb=document.createElement('div');pb.style.marginTop='14px';body.append(pb);pmUI(pb);const mh=document.createElement('div');mh.className='mh2';mh.textContent='🧠 메모리';body.append(mh);
 const o=document.createElement('div');o.innerHTML=`<label class="row" style="gap:6px;cursor:pointer;margin-top:14px"><input type="checkbox" class="mo"> 메모리 사용</label><div class="sub" style="margin-top:10px">대화에서 알려 준 나에 대한 정보가 파일로 정리돼요. "기억해 줘", "잊어줘"라고 말해도 되고, 아래에서 직접 알려 줄 수도 있어요. 이 브라우저에만 저장되고 밖으로 나가지 않아요.</div>`;
 const mo=o.querySelector('.mo');mo.checked=M.on;
 mo.onchange=()=>{M.on=mo.checked;mSave();draw()};body.append(o);
@@ -767,7 +776,31 @@ const cp=document.createElement('div');cp.className='cap';cp.textContent=`#${a.n
 if(a.type==='audio'||a.type==='video'){const e=document.createElement(a.type);e.controls=true;e.src=a.url;e.className='pl';host.append(e);return}
 const f=document.createElement('div');f.className='fchip';f.innerHTML=`<span>📄</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><span class="cap">${kb(a.blob.size)}</span><a href="${a.url}" download="${qa(a.name)}">${IC_DL} 저장</a>`;f.children[1].textContent=a.name;host.append(f)};
 const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const md=x=>{const parts=esc(x).split(/```[^\n]*\n?/);return parts.map((t,i)=>i%2?'<pre><code>'+t.replace(/\n$/,'')+'</code></pre>':t.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>')).join('')};
+const inl=t=>t.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>');
+const cb=(lg,cd)=>{const pv=/^(html|htm|svg)$/.test(lg)||(!lg&&/^\s*(<!doctype html|<html)/i.test(cd)),ru=/^(js|javascript|node)$/.test(lg);
+return '<div class="cb"><div class="ch"><span>'+(lg||'코드')+'</span><span class="grow"></span>'+(ru?'<button data-a="run">▶ 실행</button>':'')+(pv?'<button data-a="pv">👁 미리보기</button>':'')+'<button data-a="cp">복사</button></div><pre><code>'+cd+'</code></pre></div>'};
+const md=x=>{x=esc(x);let o='',p=0,m;const re=/```([^\n]*)\n?([\s\S]*?)(?:```|$)/g;while((m=re.exec(x))&&m[0]){o+=inl(x.slice(p,m.index))+cb(m[1].trim().toLowerCase(),m[2].replace(/\n$/,''));p=m.index+m[0].length}return o+inl(x.slice(p))};
+// ---------- 코드 실행·미리보기 (격리된 iframe: 저장소·네트워크 접근 불가, 실행은 워커에서 10초 제한) ----------
+const WSRC=`const out=[],fm=a=>a.map(x=>{if(typeof x==='string')return x;if(x===undefined)return'undefined';try{return JSON.stringify(x,(k,v)=>typeof v==='bigint'?v+'n':v,2)||String(x)}catch(e){return String(x)}}).join(' ');
+console.log=console.info=console.debug=(...a)=>{out.push(fm(a))};console.warn=console.error=(...a)=>{out.push('⚠ '+fm(a))};
+onmessage=async e=>{const code=e.data;let r,err;try{try{r=(0,eval)(code)}catch(x){if(x instanceof SyntaxError&&/await|return/.test(code))r=(0,eval)('(async()=>{'+code+'\\n})()');else throw x}r=await r}catch(x){err=String(x&&x.stack||x).split('\\n').slice(0,4).join('\\n')}
+let ret;if(r!==undefined){try{ret=typeof r==='string'?r:(JSON.stringify(r,(k,v)=>typeof v==='bigint'?v+'n':v,2)||String(r))}catch(x){ret=String(r)}}
+postMessage({out:out.join('\\n').slice(0,20000),ret:ret&&ret.slice(0,5000),err})}`;
+const CSPM=x=>`<meta http-equiv="Content-Security-Policy" content="${x}">`;
+const RUNDOC='<!doctype html>'+CSPM("default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; worker-src blob:")+'<script>onmessage=e=>{if(e.source!==parent)return;const d=e.data,w=new Worker(URL.createObjectURL(new Blob([d.src],{type:"text/javascript"})));w.onmessage=m=>parent.postMessage(m.data,"*");w.onerror=er=>parent.postMessage({err:String(er.message||er)},"*");w.postMessage(d.code)};parent.postMessage({ready:1},"*")<\/script>';
+function runJS(code){return new Promise(res=>{const f=document.createElement('iframe');f.setAttribute('sandbox','allow-scripts');f.style.display='none';let done=false,tm=0;
+const fin=r=>{if(done)return;done=true;clearTimeout(tm);removeEventListener('message',h);f.remove();res(r)};
+const h=e=>{if(e.source!==f.contentWindow)return;const d=e.data||{};if(d.ready)f.contentWindow.postMessage({src:WSRC,code},'*');else fin(d)};
+tm=setTimeout(()=>fin({err:'10초 안에 끝나지 않아 중단했어요'}),10000);addEventListener('message',h);f.srcdoc=RUNDOC;document.body.append(f)})}
+const runTx=r=>[r.out,r.ret!=null?'→ '+r.ret:'',r.err?'⚠ '+r.err:''].filter(Boolean).join('\n')||'(출력 없음)';
+function preview(code){const dl=document.createElement('dialog');dl.className='pvd';dl.innerHTML='<div class="mh"><b class="grow">👁 미리보기</b><span class="sub">격리 실행 · 외부 네트워크 차단</span><button class="btn ghost" style="padding:4px 12px;min-height:0">닫기</button></div><iframe sandbox="allow-scripts" title="미리보기"></iframe>';
+const meta=CSPM("default-src 'none'; img-src data: blob:; media-src data: blob:; font-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'");let h=code;
+if(/<head[^>]*>/i.test(h))h=h.replace(/<head[^>]*>/i,m=>m+meta);else if(/<html[^>]*>/i.test(h))h=h.replace(/<html[^>]*>/i,m=>m+'<head>'+meta+'</head>');else h=(/^\s*<!doctype/i.test(h)?'':'<!doctype html>')+meta+h;
+dl.querySelector('iframe').srcdoc=h;dl.querySelector('button').onclick=()=>dl.close();dl.onclose=()=>dl.remove();document.body.append(dl);dl.showModal()}
+box.onclick=async e=>{const b=e.target.closest('.ch button');if(!b)return;const c=b.closest('.cb'),code=c.querySelector('code').textContent,a=b.dataset.a;
+if(a==='cp'){try{await navigator.clipboard.writeText(code);b.textContent='복사됨'}catch(_){b.textContent='실패'}setTimeout(()=>b.textContent='복사',1200)}
+else if(a==='pv')preview(code);
+else if(a==='run'){if(b.disabled)return;let o=c.nextElementSibling;if(!o||!o.classList.contains('co')){o=document.createElement('div');o.className='co';c.after(o)}b.disabled=true;o.className='co';o.textContent='실행 중…';const r=await runJS(code);o.textContent=runTx(r);o.classList.toggle('bad',!!r.err);b.disabled=false}};
 const FL={image:'이미지',audio:'오디오',video:'동영상',text:'문서'};
 const FIC={text:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
 audio:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
@@ -781,7 +814,7 @@ if(f.a){e.href=f.a.url;e.target='_blank';e.rel='noopener';e.title=f.name;const i
 if((m.t&&m.t!=='(첨부 파일)')||!fs.length){const b=document.createElement('div');b.className='m u';b.textContent=m.t;w.append(b)}
 if(oth.length){const r=document.createElement('div');r.className='uf2';for(const f of oth){const e=document.createElement(f.a?'a':'div');e.className='uf';if(f.a){e.href=f.a.url;e.target='_blank';e.rel='noopener'}
 e.innerHTML='<i>'+(FIC[f.type]||FIC.text)+'</i><div><b></b><span></span></div>';e.querySelector('b').textContent=f.name;e.querySelector('span').textContent=FL[f.type]||'문서';e.title=f.name;r.append(e)}w.append(r)}
-return w}
+const ed=document.createElement('button');ed.className='ed';ed.textContent='✎ 편집';ed.onclick=()=>editMsg(m);w.append(ed);return w}
 function drawMem(m){const d=document.createElement('div');d.className='mc';const s=document.createElement('span');
 s.textContent=m.k==='upd'?'🧠 메모리를 고쳤어요: '+m.items.map(x=>x.o+' → '+x.d.t).join(' / '):(m.k==='add'?'🧠 메모리에 저장했어요: ':'🧠 메모리에서 지웠어요: ')+m.items.map(x=>x.d?x.d.t:x.t).join(' / ');d.append(s);return d}
 function drawMsg(m){if(m.r==='u')return drawUser(m);if(m.r==='tool'&&m.items&&m.items.length)return drawMem(m);if(m.r==='mem')return drawMem(m);const d=document.createElement('div');
@@ -797,8 +830,8 @@ function addMsg(m){if(m.r!=='tool'||isCard(m)){box.append(drawMsg(m));return}
 let ta=box.lastElementChild;if(!ta||!ta.classList.contains('ta')){ta=document.createElement('details');ta.className='ta';ta.n=0;ta.innerHTML='<summary></summary><div class="tb"></div>';box.append(ta)}
 ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='🔧 도구 '+(++ta.n)+'개 사용'}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
-if(chat){for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}}
-else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','1234 × 5678 계산해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
+if(chat){for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}addActs()}
+else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','코드로 1부터 100까지 소수 구해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
 box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#in').value=b.textContent.replace(/ \(.*\)$/,'');$('#in').focus();$('#in').oninput({target:$('#in')})})}
 box.scrollTop=1e9;drawList();drawModels();drawInc()}
 function drawInc(){const b=$('#ic');b.classList.toggle('on',inc());b.style.opacity=inc()?1:.5;b.disabled=!!(chat&&chat.msgs.length);b.title=inc()?'시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요':'시크릿 채팅으로 시작 (새 채팅에서만 켤 수 있어요)'}
@@ -899,7 +932,7 @@ say('오디오 읽는 중…');const buf=await f.blob.arrayBuffer(),ac=new(windo
 try{au=await ac.decodeAudioData(buf)}catch(e){throw new Error('이 파일의 오디오를 읽지 못했어요')}finally{ac.close()}
 const oc=new OfflineAudioContext(1,Math.ceil(au.duration*16000),16000),sr=oc.createBufferSource();sr.buffer=au;sr.connect(oc.destination);sr.start();
 const pcm=(await oc.startRendering()).getChannelData(0),dur=pcm.length/16000,ab=pcm.slice().buffer,w=await getW(m,say),segs=[];
-await call(w,{type:'asr',audio:ab,lang:({korean:1,english:1,japanese:1,chinese:1}[a.lang]?a.lang:'korean')},[ab],d=>{if(d.type==='aseg'){say(`음성 인식 중… ${d.i+1} / ${d.n} 구간`,(d.i+1)/d.n*100);
+await call(w,{type:'asr',duty:st.safe?imgDuty(m):0,audio:ab,lang:({korean:1,english:1,japanese:1,chinese:1}[a.lang]?a.lang:'korean')},[ab],d=>{if(d.type==='aseg'){say(`음성 인식 중… ${d.i+1} / ${d.n} 구간`,(d.i+1)/d.n*100);
 for(const c of d.chunks){const t=(c.t||'').trim();if(!t)continue;const s=d.off+(c.s??0);let e=c.e==null?Math.min(d.off+30,dur):d.off+c.e;if(e<=s)e=s+1;segs.push({s,e,t})}}else if(d.type==='adone')return true});
 if(!segs.length)return '인식된 음성이 없어요';
 const srt=segs.map((g,i)=>(i+1)+'\n'+tcs(g.s)+' --> '+tcs(g.e)+'\n'+g.t+'\n').join('\n'),r=await addAtt(new Blob(['﻿'+srt],{type:'text/plain;charset=utf-8'}),f.name.replace(/\.[^.]+$/,'')+'.srt','text');
@@ -907,6 +940,7 @@ let tx=segs.map(g=>tsh(g.s)+' '+g.t).join('\n');if(tx.length>3000)tx=tx.slice(0,
 return {text:`받아쓰기 완료 (${segs.length}줄, SRT는 첨부 #${r.n}):\n${tx}`,att:[r.n],model:m.name}}},
 read_file:{d:'첨부한 텍스트 파일 읽기: 메시지에 내용이 잘렸거나 이전 대화의 파일을 다시 볼 때 씀(한 번에 1500~3000자)',a:'{"file":첨부번호,"start":시작 글자 위치(선택)}',f:async a=>{const f=attOf(a.file,['text']),tx=(await f.blob.text()).replace(/\r\n/g,'\n'),s0=Math.max(0,parseInt(a.start)||0),L=txl();
 if(s0>=tx.length)return'끝까지 다 읽었어요 (전체 '+tx.length+'자)';const e=Math.min(tx.length,s0+L);return `${f.name} (${s0+1}~${e}자 / 전체 ${tx.length}자)\n${tx.slice(s0,e)}`+(e<tx.length?`\n(이어 읽으려면 start:${e})`:'')}},
+run_js:{d:'자바스크립트 실행: 복잡한 계산·정렬·데이터 처리를 코드로 정확히 구함. console.log로 출력하고 마지막 값도 돌려줌. 네트워크·파일 접근 불가, 10초 제한',a:'{"code":"자바스크립트 코드"}',f:async a=>{const c=String(a.code||'').trim();if(!c)throw new Error('code가 비어 있어요');return runTx(await runJS(c))}},
 calc:{d:'수식 계산',a:'{"expr":"수식"}',f:a=>{const e=String(a.expr||'').replace(/\^/g,'**').replace(/×/g,'*').replace(/÷/g,'/');
 if(!e||!/^[\d+\-*/%().\s]+$/.test(e))throw new Error('숫자와 + - * / % ^ ( ) 만 쓸 수 있어요');
 const v=Function('"use strict";return ('+e+')')();if(typeof v!=='number'||!isFinite(v))throw new Error('계산할 수 없는 식이에요');return String(+v.toPrecision(12))}},
@@ -934,12 +968,12 @@ const c=n.connection;if(c)add('네트워크',[c.effectiveType,c.downlink&&c.down
 try{if(n.getBattery){const b=await n.getBattery();add('배터리',Math.round(b.level*100)+'%'+(b.charging?' (충전 중)':''))}}catch(e){}
 try{if(n.storage&&n.storage.estimate){const e=await n.storage.estimate();add('브라우저 저장공간','사용 '+(e.usage/2**30).toFixed(2)+'GB / 한도 약 '+Math.round(e.quota/2**30)+'GB')}}catch(e){}
 return L.join('\n')+'\n(브라우저가 알려 주는 정보만이에요. CPU 모델명·RAM 총량·디스크 같은 건 알 수 없어요.)'}}};
-const MEMT=['remember','forget','memory_update'],SAFE=['calc','device','memory_read','image_generate','remove_background','upscale_image','remember','forget','memory_update']; // 결과에 외부 글(자막 등)이 섞이지 않는 도구
+const MEMT=['remember','forget','memory_update'],SAFE=['calc','run_js','device','memory_read','image_generate','remove_background','upscale_image','remember','forget','memory_update']; // 결과에 외부 글(자막 등)이 섞이지 않는 도구
 const sysBase=()=>`당신은 Local AI Studio의 에이전트입니다. 사용자 컴퓨터(브라우저) 안에서 돌아가며, 아래 도구를 직접 쓸 수 있습니다.
 오늘 날짜와 시각(사용자 기기 기준): ${new Date().toLocaleString('ko-KR',{dateStyle:'full',timeStyle:'short'})}
 [원칙]
 1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요. 사용자의 컴퓨터 사양·파일·개인 정보는 도구 결과나 사용자가 직접 말한 내용 말고는 절대 추측하거나 지어내지 마세요. 아래 예시 대화는 형식만 참고하고 내용을 섞지 마세요.
-2. 이미지 생성(image_generate)·이미지 배경 제거(remove_background)·이미지 업스케일링(upscale_image)·음성/영상 오디오 받아쓰기(transcribe)·수식 계산(calc)·사용자 기기 정보(device)는 도구로 할 수 있습니다. 컴퓨터 사양·GPU·메모리를 묻는 말에는 반드시 device를 먼저 호출하세요. 이런 요청에는 "할 수 없다"고 하거나 외부 서비스를 추천하지 말고 곧바로 도구를 호출하세요. 인사·잡담·지식 질문·글쓰기·코딩은 도구 없이 직접 답하세요.
+2. 이미지 생성(image_generate)·이미지 배경 제거(remove_background)·이미지 업스케일링(upscale_image)·음성/영상 오디오 받아쓰기(transcribe)·수식 계산(calc)·사용자 기기 정보(device)는 도구로 할 수 있습니다. 컴퓨터 사양·GPU·메모리를 묻는 말에는 반드시 device를 먼저 호출하세요. 이런 요청에는 "할 수 없다"고 하거나 외부 서비스를 추천하지 말고 곧바로 도구를 호출하세요. 복잡한 계산·정렬·데이터 처리는 run_js로 코드를 돌려 정확히 구하세요. 인사·잡담·지식 질문·글쓰기·코딩은 도구 없이 직접 답하세요.
 3. 도구는 한 번에 하나, 아래 형식 한 줄만 출력하고 멈추세요(설명·코드블록 금지, JSON은 큰따옴표).
 <tool>{"name":"도구 이름","args":{...}}</tool>
 4. 인자: image_generate의 prompt는 영어로, 사용자 말을 그대로 옮기지 말고 주제·스타일·분위기를 담은 구체적인 한 문장으로 쓰세요. file은 [첨부 #번호]의 번호(생략하면 가장 최근 파일)입니다.
@@ -998,8 +1032,17 @@ sx.done();const tm={r:'tool',t:'🔧 '+(c.name||'?')+(c.args&&Object.keys(c.args
 const DONE={image_generate:'이미지를 만들었어요.',remove_background:'배경을 지웠어요.',upscale_image:'이미지를 확대했어요.'},lt=(chat.msgs[lu]||{}).t||'';
 if(!W.c&&DONE[c.name]&&att.length&&!/그리고|그다음|그 다음|하고|한 뒤|한뒤|후에|다음에|\bthen\b|\band\b|[&+]/i.test(lt)){const t=DONE[c.name]+' 더 필요한 게 있으면 말씀해 주세요.';chat.msgs.push({r:'a',t});box.append(drawMsg({r:'a',t}));sb();save();return}
 if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
+// 마지막 답변 아래 '다시 생성', 내 메시지 옆 '편집'
+function addActs(){box.querySelectorAll('.acts').forEach(x=>x.remove());if(busy||!chat)return;const lm=chat.msgs[chat.msgs.length-1];if(!lm||!(lm.r==='u'||(lm.r==='a'&&!lm.h)))return;
+const a=document.createElement('div');a.className='acts';a.innerHTML='<button>🔄 다시 생성</button>';a.firstChild.onclick=regen;box.append(a);sb()}
+async function runTurn(){try{await turn()}catch(e){if(stopped)put('tl','중단했어요');else{put('m a','오류: '+errText(e.message));if(/GPU 연결이 끊겼/.test(errText(e.message))){for(const k of ['c','x'])if(W[k]){try{W[k].terminate()}catch(_){}W[k]=null;W[k+'m']=null}}}}
+busy=false;$('#sd').textContent='↑';save();drawList();addActs()}
+async function regen(){if(busy||!chat)return;const lu=chat.msgs.map(x=>x.r).lastIndexOf('u');if(lu<0)return;chat.msgs=chat.msgs.slice(0,lu+1);busy=true;stopped=false;$('#sd').textContent='■';renderChat();save();await runTurn()}
+function editMsg(m){if(busy||!chat)return;const i=chat.msgs.indexOf(m);if(i<0)return;if(i<chat.msgs.length-1&&!confirm('이 메시지부터 이후 대화가 지워지고 다시 시작돼요. 계속할까요?'))return;
+chat.msgs=chat.msgs.slice(0,i);pend=[];for(const n of m.att||[]){const a=ATT[chat.id+':'+n];if(a)pend.push({blob:a.blob,name:a.name,type:a.type})}
+const inp=$('#in');inp.value=m.t==='(첨부 파일)'?'':m.t;drawPend();save();renderChat();inp.oninput({target:inp});inp.focus()}
 const send=async()=>{if(busy){const first=!stopped;stopped=true;W.c&&W.c.postMessage({type:'stop'});abortAct();if(first)put('tl','중단하는 중…');return}
-const t=$('#in').value.trim();if(!t&&!pend.length)return;
+const t=$('#in').value.trim();if(!t&&!pend.length)return;box.querySelectorAll('.acts').forEach(x=>x.remove());
 let m=chatModel();if(!m){const h=st.hw||{},ok=MODELS.filter(x=>x.kind==='chat'&&fit(x)==='ok'),rec=ok.filter(x=>x.gb<=(h.cap||1.5)).pop()||ok[0];if(!rec){put('tl','이 기기에서 쓸 수 있는 대화 모델이 없어요. (WebGPU가 필요해요)');return}if(!(await pickDl(rec)))return;m=chatModel();if(!m)return}
 busy=true;stopped=false;$('#sd').textContent='■';
 if(!chat){chat={id:uid(),title:'새 채팅',msgs:[],model:m.id,an:0,inc:incNext};incNext=false;S.chats.unshift(chat);S.cur=chat.id}else chat.model=m.id;
@@ -1010,8 +1053,7 @@ pend=[];drawPend();$('#in').value='';$('#in').style.height='auto';
 const llm=(t||'')+(tags.length?'\n'+tags.join('\n'):''),lq=(t||'')+(tq.length?'\n'+tq.join('\n'):''),um={r:'u',t:t||'(첨부 파일)',att:ids,fi,llm,...(lq!==llm?{lq}:{})}; // lq: 이전 턴에서는 파일 내용을 빼고 보냄(컨텍스트 절약)
 if(chat.title==='새 채팅'){chat.title=(t||tq[0]||'새 채팅').slice(0,28)}
 chat.msgs.push(um);box.append(drawMsg(um));box.scrollTop=1e9;$('#ct').textContent=chat.title;drawList();drawInc();save();
-try{await turn()}catch(e){if(stopped)put('tl','중단했어요');else{put('m a','오류: '+errText(e.message));if(/GPU 연결이 끊겼/.test(errText(e.message))){for(const k of ['c','x'])if(W[k]){try{W[k].terminate()}catch(_){}W[k]=null;W[k+'m']=null}}}}
-busy=false;$('#sd').textContent='↑';save();drawList()};
+await runTurn()};
 // ---------- 입력·첨부 ----------
 function drawPend(){const h=$('#pe');h.innerHTML='';pend.forEach((f,i)=>{const b=document.createElement('button');b.className='fc';b.textContent=({image:'🖼',audio:'🎵',video:'🎞',text:'📄'}[f.type]||'📎')+' '+f.name+' ×';b.onclick=()=>{pend.splice(i,1);drawPend()};h.append(b)})}
 const txl=()=>((chatModel()||{}).ctx||4096)>=8192?3000:1500; // 작은 모델은 컨텍스트가 좁아 파일 내용을 덜 넣음
