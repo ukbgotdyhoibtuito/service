@@ -98,6 +98,29 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
 
+        /* 통일된 정보 카드 · 행 · 게이지 (사이드바와 상세 창이 같이 씀) */
+        .section-title { display:flex; align-items:center; gap:.45rem; margin:0 .25rem .5rem; font-size:.6875rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
+        .section-title i { color:var(--color-accent); font-size:.75rem; }
+        .info-card { background:var(--bg-surface); border:1px solid var(--border-color); border-radius:1rem; overflow:hidden; }
+        .info-row { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.7rem .9rem; font-size:.8125rem; }
+        .info-card > .info-row:not(:first-child) { border-top:1px solid var(--border-color); }
+        .info-label { display:flex; align-items:center; gap:.55rem; color:var(--text-muted); white-space:nowrap; }
+        .info-label i { width:1rem; text-align:center; font-size:.8rem; }
+        .info-value { min-width:0; font-weight:500; text-align:right; color:var(--text-main); overflow-wrap:anywhere; }
+        .meter-wrap { padding:0 .9rem .8rem; }
+        .meter { height:6px; border-radius:99px; background:var(--border-color); overflow:hidden; }
+        .meter > i { display:block; height:100%; border-radius:inherit; background:var(--color-accent); transition:width .4s ease; }
+        .tile { background:var(--bg-surface); border:1px solid var(--border-color); border-radius:1rem; padding:.9rem; min-width:0; }
+        .tile-label { display:flex; align-items:center; gap:.4rem; font-size:.6875rem; color:var(--text-muted); margin-bottom:.35rem; }
+        .tile-label i { color:var(--color-accent); }
+        .tile-value { font-size:1.25rem; font-weight:700; line-height:1.2; color:var(--text-main); }
+        .tile-sub { margin-top:.25rem; font-size:.6875rem; color:var(--text-muted); }
+        .tile .meter { margin-top:.6rem; }
+        .chip { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .65rem; border-radius:999px; font-size:.6875rem; font-weight:500; border:1px solid var(--border-color); background:var(--bg-surface); color:var(--text-muted); }
+        .chip.ok { color:var(--text-main); }
+        .chip.ok i { color:var(--color-accent); }
+        .chip.no { opacity:.55; }
+
         /* Scrollbars */
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -198,47 +221,33 @@
 
             <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-6">
                 <div>
-                    <h2 class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2">내 기기</h2>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center p-3 rounded-2xl surface border border-color">
-                            <span class="text-sm text-[var(--text-muted)] flex items-center gap-2"><i class="fas fa-microchip w-4"></i> 운영체제</span>
-                            <span id="info-os" class="text-sm font-medium text-[var(--text-main)] truncate max-w-[100px]">확인 중</span>
-                        </div>
-                        <div class="flex justify-between items-center p-3 rounded-2xl surface border border-color">
-                            <span class="text-sm text-[var(--text-muted)] flex items-center gap-2"><i class="fas fa-memory w-4"></i> 메모리</span>
-                            <span id="info-ram" class="text-sm font-medium text-[var(--text-main)] font-mono">--</span>
-                        </div>
-                        <div class="flex justify-between items-center p-3 rounded-2xl surface border border-color">
-                            <span class="text-sm text-[var(--text-muted)] flex items-center gap-2"><i class="fas fa-battery-half w-4"></i> 배터리</span>
-                            <span id="info-bat" class="text-sm font-medium text-[var(--text-main)] font-mono">--%</span>
-                        </div>
+                    <h2 class="section-title"><i class="fas fa-mobile-screen"></i>내 기기</h2>
+                    <div class="info-card">
+                        <div class="info-row"><span class="info-label"><i class="fas fa-microchip"></i>운영체제</span><span id="info-os" class="info-value">--</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-globe"></i>브라우저</span><span id="info-browser" class="info-value">--</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-layer-group"></i>처리 코어</span><span id="info-cpu" class="info-value">--</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-memory"></i>메모리</span><span id="info-ram" class="info-value">--</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-display"></i>화면</span><span id="info-screen" class="info-value">--</span></div>
                     </div>
                 </div>
 
                 <div>
-                    <h2 class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2">인터넷 연결</h2>
-                    <div class="space-y-2">
-                        <div class="p-3 rounded-2xl surface border border-color flex justify-between items-center">
-                            <span class="text-sm text-[var(--text-muted)] flex items-center gap-2"><i class="fas fa-wifi w-4"></i> 연결 상태</span>
-                            <div class="flex items-center gap-2">
-                                <div id="net-dot" class="w-2 h-2 rounded-full bg-green-500"></div>
-                                <span id="info-net" class="text-sm font-medium text-[var(--text-main)]">온라인</span>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="surface border border-color p-3 rounded-2xl text-center">
-                                <span class="block text-[10px] text-[var(--text-muted)] mb-1">예상 속도</span>
-                                <span id="info-downlink" class="text-xs font-mono font-medium text-[var(--text-main)]">--</span>
-                            </div>
-                            <div class="surface border border-color p-3 rounded-2xl text-center">
-                                <span class="block text-[10px] text-[var(--text-muted)] mb-1">지연시간</span>
-                                <span id="info-rtt" class="text-xs font-mono font-medium text-[var(--text-main)]">--</span>
-                            </div>
-                        </div>
-                        <div class="p-3 rounded-2xl surface border border-color flex justify-between items-center">
-                            <span class="text-sm text-[var(--text-muted)] flex items-center gap-2"><i class="fas fa-signal w-4"></i> 연결 종류</span>
-                            <span id="info-conn-type" class="text-sm font-medium text-[var(--text-main)]">--</span>
-                        </div>
+                    <h2 class="section-title"><i class="fas fa-battery-half"></i>배터리 · 저장공간</h2>
+                    <div class="info-card">
+                        <div class="info-row"><span class="info-label"><i class="fas fa-battery-half"></i>배터리</span><span id="info-bat" class="info-value">--</span></div>
+                        <div class="meter-wrap"><div class="meter"><i id="info-bat-bar" style="width:0%"></i></div></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-database"></i>브라우저 저장공간</span><span id="info-storage" class="info-value">--</span></div>
+                        <div class="meter-wrap"><div class="meter"><i id="info-storage-bar" style="width:0%"></i></div></div>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="section-title"><i class="fas fa-wifi"></i>인터넷 연결</h2>
+                    <div class="info-card">
+                        <div class="info-row"><span class="info-label"><i class="fas fa-wifi"></i>연결 상태</span><span class="info-value flex items-center gap-2"><span id="net-dot" class="w-2 h-2 rounded-full bg-green-500"></span><span id="info-net">온라인</span></span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-signal"></i>연결 종류</span><span id="info-conn-type" class="info-value">--</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-bolt-lightning"></i>예상 속도</span><span id="info-downlink" class="info-value">--</span></div>
+                        <div class="info-row"><span class="info-label"><i class="fas fa-stopwatch"></i>지연시간</span><span id="info-rtt" class="info-value">--</span></div>
                     </div>
                 </div>
             </div>
@@ -357,7 +366,7 @@
 
     <!-- Device Detail Modal: friendly, human-readable view of collected data -->
     <div id="device-detail-modal">
-        <div class="surface w-[92%] max-w-2xl max-h-[85vh] rounded-[1.75rem] flex flex-col shadow-2xl border border-color overflow-hidden">
+        <div class="surface w-[92%] max-w-3xl max-h-[88vh] rounded-[1.75rem] flex flex-col shadow-2xl border border-color overflow-hidden">
             <div class="p-5 border-b border-color flex justify-between items-center bg-[var(--bg-base)]">
                 <div>
                     <h2 class="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
@@ -369,7 +378,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div id="device-detail-body" class="flex-1 overflow-y-auto custom-scroll p-5 space-y-6"></div>
+            <div id="device-detail-body" class="flex-1 overflow-y-auto custom-scroll p-5 grid gap-5 md:grid-cols-2 content-start"></div>
             <div class="p-4 border-t border-color bg-[var(--bg-base)] flex justify-between items-center">
                 <p class="text-[11px] text-[var(--text-muted)] leading-relaxed pr-3">이 기기에서만 확인되며, 저장되거나 전송되지 않아요.</p>
                 <button id="open-json-from-detail-btn" class="px-4 py-2 rounded-full bg-[var(--bg-surface)] border border-color text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--color-accent)] transition-colors flex items-center gap-2 shrink-0">
@@ -476,6 +485,12 @@
             infoDownlink: document.getElementById('info-downlink'),
             infoRtt: document.getElementById('info-rtt'),
             infoConnType: document.getElementById('info-conn-type'),
+            infoBrowser: document.getElementById('info-browser'),
+            infoCpu: document.getElementById('info-cpu'),
+            infoScreen: document.getElementById('info-screen'),
+            infoBatBar: document.getElementById('info-bat-bar'),
+            infoStorage: document.getElementById('info-storage'),
+            infoStorageBar: document.getElementById('info-storage-bar'),
             suggestions: document.getElementById('suggestions'),
             userInput: document.getElementById('user-input'),
             composerShell: document.getElementById('composer-shell'),
@@ -665,20 +680,63 @@
             },
 
             getGpuInfo() {
+                const unknown = { vendor: 'Unknown', renderer: 'Unknown GPU', webgl2: false, max_texture_size: null };
                 try {
                     const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                    if (!gl) return { vendor: 'Unknown', renderer: 'Unknown GPU' };
+                    const gl2 = canvas.getContext('webgl2');
+                    const gl = gl2 || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (!gl) return unknown;
                     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                    return debugInfo
-                        ? {
-                            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-                            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-                        }
-                        : { vendor: 'Unknown', renderer: 'Unknown GPU' };
+                    return {
+                        vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown',
+                        renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown GPU',
+                        webgl2: !!gl2,
+                        max_texture_size: gl.getParameter(gl.MAX_TEXTURE_SIZE)
+                    };
                 } catch {
-                    return { vendor: 'Unknown', renderer: 'Unknown GPU' };
+                    return unknown;
                 }
+            },
+
+            parseBrowser(ua) {
+                const rules = [[/Edg\/(\d+)/, 'Edge'], [/OPR\/(\d+)/, 'Opera'], [/SamsungBrowser\/(\d+)/, 'Samsung Internet'],
+                    [/Whale\/(\d+)/, 'Whale'], [/(?:Chrome|CriOS)\/(\d+)/, 'Chrome'], [/(?:Firefox|FxiOS)\/(\d+)/, 'Firefox'], [/Version\/(\d+).*Safari/, 'Safari']];
+                let name = '알 수 없음', version = null;
+                for (const [re, n] of rules) { const m = re.exec(ua); if (m) { name = n; version = m[1]; break; } }
+                const engine = /Firefox|FxiOS/.test(ua) ? 'Gecko' : /Chrome|CriOS|Edg|OPR|SamsungBrowser/.test(ua) && !/iPhone|iPad/.test(ua) ? 'Blink' : /AppleWebKit/.test(ua) ? 'WebKit' : '알 수 없음';
+                return { name, version, engine };
+            },
+
+            async getUaData() {
+                const u = navigator.userAgentData;
+                if (!u) return null;
+                const base = { mobile: u.mobile, platform: u.platform };
+                try {
+                    const h = await u.getHighEntropyValues(['model', 'platformVersion', 'architecture', 'bitness']);
+                    return { ...base, model: h.model || null, platform_version: h.platformVersion || null, architecture: h.architecture || null, bitness: h.bitness || null };
+                } catch {
+                    return base;
+                }
+            },
+
+            getFeatureSupport() {
+                return {
+                    webgl2: !!this._gpu?.webgl2,
+                    webgpu: 'gpu' in navigator,
+                    webassembly: typeof WebAssembly === 'object',
+                    web_workers: 'Worker' in window,
+                    webrtc: !!window.RTCPeerConnection,
+                    notifications: 'Notification' in window,
+                    geolocation: 'geolocation' in navigator,
+                    vibration: 'vibrate' in navigator,
+                    share: 'share' in navigator,
+                    clipboard: !!navigator.clipboard,
+                    speech_synthesis: 'speechSynthesis' in window,
+                    gamepad: 'getGamepads' in navigator,
+                    wake_lock: 'wakeLock' in navigator,
+                    bluetooth: 'bluetooth' in navigator,
+                    usb: 'usb' in navigator
+                };
             },
 
             async getStorageEstimate() {
@@ -764,8 +822,22 @@
 
             async collect() {
                 const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                const gpu = this.getGpuInfo();
+                // 바뀌지 않는 값은 한 번만 계산해서 재사용 (10초마다 다시 만들 필요 없음)
+                if (!this._static) {
+                    this._gpu = this.getGpuInfo();
+                    this._static = {
+                        gpu: this._gpu,
+                        browser: this.parseBrowser(navigator.userAgent),
+                        uaData: await this.getUaData(),
+                        features: this.getFeatureSupport(),
+                        loadedAt: Date.now()
+                    };
+                }
+                const { gpu, browser, uaData, features, loadedAt } = this._static;
                 const capabilities = this.getCapabilities();
+                const mm = (q) => window.matchMedia?.(q)?.matches ?? false;
+                const heap = performance.memory || null;
+                const mb = (v) => +(v / (1024 * 1024)).toFixed(0);
 
                 const [battery, storageEstimate, permissions, mediaDevices] = await Promise.all([
                     this.getBattery(),
@@ -779,31 +851,46 @@
                     environment: state.isPC ? 'Desktop/Workstation' : 'Mobile/Tablet',
                     hardware: {
                         os_platform: navigator.platform,
+                        device_model: uaData?.model || null,
+                        os_version: uaData?.platform_version || null,
+                        cpu_architecture: uaData ? [uaData.architecture, uaData.bitness && uaData.bitness + '-bit'].filter(Boolean).join(' ') || null : null,
                         logical_processors: navigator.hardwareConcurrency || 'Unknown',
                         approx_ram: navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'Unknown',
                         gpu_vendor: gpu.vendor,
                         gpu_renderer: gpu.renderer,
+                        gpu_max_texture_size: gpu.max_texture_size,
                         audio_sample_rate_hz: state.audioSampleRate
                     },
                     software: {
+                        browser_name: browser.name,
+                        browser_version: browser.version,
+                        browser_engine: browser.engine,
                         user_agent: navigator.userAgent,
                         language: navigator.language,
                         languages: navigator.languages ? navigator.languages.join(', ') : navigator.language,
                         cookies_enabled: navigator.cookieEnabled,
                         do_not_track: navigator.doNotTrack === '1' ? 'enabled' : 'disabled',
                         pdf_viewer_enabled: navigator.pdfViewerEnabled ?? 'Unknown',
-                        webdriver_automation: navigator.webdriver === true
+                        webdriver_automation: navigator.webdriver === true,
+                        secure_context: window.isSecureContext,
+                        standalone_app_mode: mm('(display-mode: standalone)') || navigator.standalone === true
                     },
                     locale: {
                         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        timezone_offset_minutes: -new Date().getTimezoneOffset()
+                        timezone_offset_minutes: -new Date().getTimezoneOffset(),
+                        local_time: new Date().toLocaleString('ko-KR'),
+                        hour_cycle: Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12 ? '12시간제' : '24시간제'
                     },
                     display: {
                         resolution: `${window.screen.width}x${window.screen.height}`,
+                        available_resolution: `${window.screen.availWidth}x${window.screen.availHeight}`,
                         viewport: `${window.innerWidth}x${window.innerHeight}`,
+                        orientation: window.screen.orientation?.type || (window.innerWidth >= window.innerHeight ? 'landscape' : 'portrait'),
                         pixel_ratio: window.devicePixelRatio || 1,
                         is_extended: window.screen.isExtended || false,
                         color_depth: capabilities.color_depth,
+                        color_gamut: mm('(color-gamut: rec2020)') ? 'rec2020' : mm('(color-gamut: p3)') ? 'p3' : 'srgb',
+                        hdr: mm('(dynamic-range: high)'),
                         pointer: capabilities.pointer,
                         max_touch_points: capabilities.max_touch_points,
                         prefers_color_scheme: capabilities.prefers_color_scheme,
@@ -813,15 +900,24 @@
                         ...(storageEstimate || { usage_mb: null, quota_mb: null }),
                         ...this.getStorageSupport()
                     },
+                    memory: {
+                        js_heap_used_mb: heap ? mb(heap.usedJSHeapSize) : null,
+                        js_heap_limit_mb: heap ? mb(heap.jsHeapSizeLimit) : null
+                    },
                     status: {
                         battery_level: battery?.level ?? 'Unsupported',
                         battery_charging: battery?.charging ?? null,
+                        battery_charging_time_min: battery?.charging_time_min ?? null,
+                        battery_discharging_time_min: battery?.discharging_time_min ?? null,
                         network_type: connection ? connection.effectiveType : 'Unknown',
+                        connection_medium: connection?.type || null,
                         downlink_mbps: connection?.downlink ?? null,
                         rtt_ms: connection?.rtt ?? null,
                         save_data: connection?.saveData ?? null,
-                        online: navigator.onLine
+                        online: navigator.onLine,
+                        page_open_minutes: Math.round((Date.now() - loadedAt) / 60000)
                     },
+                    features: features,
                     permissions: permissions,
                     media_devices: mediaDevices || { audio_input: null, video_input: null, audio_output: null }
                 };
@@ -830,22 +926,37 @@
             },
 
             renderToUI() {
-                const { hardware, status, display } = state.systemData;
+                const { hardware, status, display, software, storage } = state.systemData;
+                const pct = (n) => Math.max(0, Math.min(100, n));
 
-                dom.infoOs.innerText = hardware.os_platform;
-                dom.infoRam.innerText = hardware.approx_ram;
-                dom.infoBat.innerText = status.battery_level + (status.battery_charging ? ' ⚡' : '');
+                dom.infoOs.innerText = hardware.device_model ? `${hardware.os_platform} · ${hardware.device_model}` : hardware.os_platform;
+                dom.infoBrowser.innerText = software.browser_version ? `${software.browser_name} ${software.browser_version}` : software.browser_name;
+                dom.infoCpu.innerText = hardware.logical_processors === 'Unknown' ? '확인 불가' : `${hardware.logical_processors}개`;
+                dom.infoRam.innerText = hardware.approx_ram === 'Unknown' ? '확인 불가' : hardware.approx_ram;
+                dom.infoScreen.innerText = `${display.resolution} · ${display.pixel_ratio}x`;
+
+                const lvl = parseInt(status.battery_level, 10);
+                dom.infoBat.innerText = Number.isNaN(lvl) ? '확인 불가' : status.battery_level + (status.battery_charging ? ' ⚡' : '');
+                dom.infoBatBar.style.width = (Number.isNaN(lvl) ? 0 : pct(lvl)) + '%';
+
+                const hasQuota = storage.quota_mb && storage.usage_mb != null;
+                dom.infoStorage.innerText = hasQuota ? `${DeviceDetail.fmtMB(storage.usage_mb)} / ${DeviceDetail.fmtMB(storage.quota_mb)}` : '측정 불가';
+                dom.infoStorageBar.style.width = (hasQuota ? pct(storage.usage_mb / storage.quota_mb * 100) : 0) + '%';
 
                 dom.netDot.className = `w-2 h-2 rounded-full ${status.online ? 'bg-green-500' : 'bg-red-500'}`;
-                dom.infoNet.innerText = status.online
-                    ? (status.network_type ? `온라인 (${status.network_type})` : '온라인')
-                    : '오프라인';
-
+                dom.infoNet.innerText = status.online ? '온라인' : '오프라인';
                 dom.infoDownlink.innerText = status.downlink_mbps != null ? `${status.downlink_mbps} Mbps` : '지원 안 함';
                 dom.infoRtt.innerText = status.rtt_ms != null ? `${status.rtt_ms} ms` : '지원 안 함';
                 dom.infoConnType.innerText = status.network_type === 'Unknown'
                     ? '지원 안 함'
-                    : (status.network_type || '지원 안 함').toUpperCase() + (status.save_data ? ' · 데이터 절약 중' : '');
+                    : (status.network_type || '지원 안 함').toUpperCase() + (status.save_data ? ' · 데이터 절약' : '');
+
+                // 상세 창이 열려 있으면 같이 갱신 (스크롤 위치 유지)
+                if (dom.deviceDetailModal.style.display === 'flex') {
+                    const top = dom.deviceDetailBody.scrollTop;
+                    dom.deviceDetailBody.innerHTML = DeviceDetail.render();
+                    dom.deviceDetailBody.scrollTop = top;
+                }
             }
         };
 
@@ -867,89 +978,158 @@
                 }
             },
 
-            section(title, rowsHtml) {
+            fmtMB(mb) { return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : Math.round(mb) + ' MB'; },
+            fmtMin(m) { if (m == null) return null; const h = Math.floor(m / 60); return h ? `${h}시간 ${m % 60}분` : `${m}분`; },
+            yn(v) { return v == null ? '확인 불가' : v ? '예' : '아니요'; },
+
+            section(icon, title, rowsHtml, note) {
                 return `
-                    <div>
-                        <h3 class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">${escapeHtml(title)}</h3>
-                        <div class="space-y-2">${rowsHtml}</div>
-                    </div>
+                    <section>
+                        <h3 class="section-title"><i class="fas ${icon}"></i>${escapeHtml(title)}</h3>
+                        <div class="info-card">${rowsHtml}</div>
+                        ${note ? `<p class="text-[11px] text-[var(--text-muted)] mt-2 px-1 leading-relaxed">${escapeHtml(note)}</p>` : ''}
+                    </section>
                 `;
             },
 
             row(icon, label, value) {
                 return `
-                    <div class="flex justify-between items-center p-3 rounded-2xl surface border border-color">
-                        <span class="text-sm text-[var(--text-muted)] flex items-center gap-2"><i class="fas ${icon} w-4"></i> ${escapeHtml(label)}</span>
-                        <span class="text-sm font-medium text-[var(--text-main)] text-right">${escapeHtml(String(value ?? '확인 불가'))}</span>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas ${icon}"></i>${escapeHtml(label)}</span>
+                        <span class="info-value">${escapeHtml(String(value ?? '확인 불가'))}</span>
+                    </div>
+                `;
+            },
+
+            tile(icon, label, value, sub, pct) {
+                return `
+                    <div class="tile">
+                        <div class="tile-label"><i class="fas ${icon}"></i>${escapeHtml(label)}</div>
+                        <div class="tile-value">${escapeHtml(value)}</div>
+                        <div class="tile-sub">${escapeHtml(sub || '')}</div>
+                        ${pct != null ? `<div class="meter"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>` : ''}
                     </div>
                 `;
             },
 
             render() {
                 const d = state.systemData;
-                if (!d.hardware) return '<p class="text-sm text-[var(--text-muted)]">아직 정보를 모으는 중이에요.</p>';
+                if (!d.hardware) return '<p class="text-sm text-[var(--text-muted)] md:col-span-2">아직 정보를 모으는 중이에요.</p>';
 
                 const L = this.LABELS;
+                const R = (...a) => this.row(...a);
                 const parts = [];
+                const lvl = parseInt(d.status.battery_level, 10);
+                const hasQuota = d.storage.quota_mb && d.storage.usage_mb != null;
+                const n = (v, unit) => (typeof v === 'number' ? v + unit : '확인 불가');
 
-                parts.push(this.section('기본 정보', [
-                    this.row('fa-tablet-screen-button', '기기 종류', L.environment[d.environment] || d.environment),
-                    this.row('fa-microchip', '운영체제', d.hardware.os_platform),
-                    this.row('fa-layer-group', '처리 코어 수', d.hardware.logical_processors + '개'),
-                    this.row('fa-memory', '예상 메모리', d.hardware.approx_ram)
+                // 한눈에 보는 요약
+                parts.push(`<div class="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3">${[
+                    this.tile('fa-battery-half', '배터리', Number.isNaN(lvl) ? '확인 불가' : d.status.battery_level,
+                        d.status.battery_charging ? '충전 중' : (Number.isNaN(lvl) ? '' : '사용 중'), Number.isNaN(lvl) ? null : lvl),
+                    this.tile('fa-memory', '메모리', d.hardware.approx_ram === 'Unknown' ? '확인 불가' : d.hardware.approx_ram,
+                        d.hardware.logical_processors === 'Unknown' ? '' : `코어 ${d.hardware.logical_processors}개`),
+                    this.tile('fa-database', '브라우저 저장공간', hasQuota ? this.fmtMB(d.storage.usage_mb) : '측정 불가',
+                        hasQuota ? `전체 ${this.fmtMB(d.storage.quota_mb)}` : '', hasQuota ? d.storage.usage_mb / d.storage.quota_mb * 100 : null),
+                    this.tile('fa-wifi', '인터넷', d.status.online ? (d.status.network_type === 'Unknown' ? '온라인' : d.status.network_type.toUpperCase()) : '오프라인',
+                        d.status.downlink_mbps != null ? `${d.status.downlink_mbps} Mbps · ${d.status.rtt_ms ?? '-'} ms` : '속도 확인 불가')
+                ].join('')}</div>`);
+
+                parts.push(this.section('fa-mobile-screen-button', '기기', [
+                    R('fa-tablet-screen-button', '기기 종류', L.environment[d.environment] || d.environment),
+                    d.hardware.device_model ? R('fa-tag', '모델명', d.hardware.device_model) : '',
+                    R('fa-microchip', '운영체제', d.hardware.os_platform + (d.hardware.os_version ? ` ${d.hardware.os_version}` : '')),
+                    d.hardware.cpu_architecture ? R('fa-gears', 'CPU 구조', d.hardware.cpu_architecture) : '',
+                    R('fa-layer-group', '처리 코어 수', d.hardware.logical_processors === 'Unknown' ? '확인 불가' : d.hardware.logical_processors + '개'),
+                    R('fa-memory', '예상 메모리', d.hardware.approx_ram === 'Unknown' ? '확인 불가' : d.hardware.approx_ram),
+                    R('fa-champagne-glasses', '그래픽 장치', d.hardware.gpu_renderer),
+                    R('fa-music', '오디오 샘플레이트', d.hardware.audio_sample_rate_hz ? `${d.hardware.audio_sample_rate_hz} Hz` : null)
+                ].join(''), '메모리는 브라우저가 알려주는 대략값(최대 8GB까지만 표시)이에요.'));
+
+                parts.push(this.section('fa-globe', '브라우저', [
+                    R('fa-globe', '브라우저', d.software.browser_version ? `${d.software.browser_name} ${d.software.browser_version}` : d.software.browser_name),
+                    R('fa-cube', '엔진', d.software.browser_engine),
+                    R('fa-lock', '보안 연결(HTTPS)', this.yn(d.software.secure_context)),
+                    R('fa-window-restore', '앱처럼 실행 중', this.yn(d.software.standalone_app_mode)),
+                    R('fa-cookie-bite', '쿠키', d.software.cookies_enabled ? '사용 가능' : '꺼져 있음'),
+                    R('fa-user-shield', '추적 금지(DNT)', d.software.do_not_track === 'enabled' ? '켜짐' : '꺼짐'),
+                    R('fa-file-pdf', 'PDF 보기', this.yn(d.software.pdf_viewer_enabled === 'Unknown' ? null : d.software.pdf_viewer_enabled)),
+                    typeof d.memory.js_heap_used_mb === 'number' ? R('fa-chart-simple', '페이지 메모리 사용', `${d.memory.js_heap_used_mb} MB / ${d.memory.js_heap_limit_mb} MB`) : ''
                 ].join('')));
 
-                parts.push(this.section('배터리 · 인터넷', [
-                    this.row('fa-battery-half', '배터리 잔량', d.status.battery_level + (d.status.battery_charging ? ' (충전 중)' : '')),
-                    this.row('fa-wifi', '연결 상태', d.status.online ? '온라인' : '오프라인'),
-                    this.row('fa-gauge-high', '연결 종류', d.status.network_type === 'Unknown' ? '확인 불가' : (d.status.network_type || '확인 불가').toUpperCase()),
-                    this.row('fa-bolt-lightning', '예상 속도', d.status.downlink_mbps != null ? `${d.status.downlink_mbps} Mbps` : '확인 불가')
+                parts.push(this.section('fa-display', '화면', [
+                    R('fa-display', '해상도', d.display.resolution),
+                    R('fa-vector-square', '사용 가능 영역', d.display.available_resolution),
+                    R('fa-window-maximize', '현재 창 크기', d.display.viewport),
+                    R('fa-expand', '화면 배율', d.display.pixel_ratio + 'x'),
+                    R('fa-rotate', '화면 방향', /portrait/.test(d.display.orientation) ? '세로' : '가로'),
+                    R('fa-palette', '색 표현 범위', d.display.color_gamut === 'srgb' ? '표준(sRGB)' : d.display.color_gamut.toUpperCase()),
+                    R('fa-sun', 'HDR 지원', this.yn(d.display.hdr)),
+                    R('fa-circle-half-stroke', '화면 모드', L.colorScheme[d.display.prefers_color_scheme] || d.display.prefers_color_scheme),
+                    R('fa-hand-pointer', '터치', d.display.max_touch_points > 0 ? `지원 (동시 ${d.display.max_touch_points}점)` : '지원 안 함')
                 ].join('')));
 
-                parts.push(this.section('화면 · 그래픽', [
-                    this.row('fa-display', '해상도', d.display.resolution),
-                    this.row('fa-expand', '화면 배율', d.display.pixel_ratio + 'x'),
-                    this.row('fa-circle-half-stroke', '화면 모드', L.colorScheme[d.display.prefers_color_scheme] || d.display.prefers_color_scheme),
-                    this.row('fa-hand-pointer', '터치 지원', d.display.max_touch_points > 0 ? '지원함' : '지원 안 함'),
-                    this.row('fa-champagne-glasses', '그래픽 장치', d.hardware.gpu_renderer)
+                const bat = d.status;
+                parts.push(this.section('fa-battery-half', '배터리', [
+                    R('fa-battery-half', '배터리 잔량', Number.isNaN(lvl) ? '확인 불가' : bat.battery_level),
+                    R('fa-plug', '충전 상태', bat.battery_charging == null ? '확인 불가' : bat.battery_charging ? '충전 중' : '사용 중'),
+                    bat.battery_charging && bat.battery_charging_time_min != null ? R('fa-hourglass-half', '완충까지', this.fmtMin(bat.battery_charging_time_min)) : '',
+                    !bat.battery_charging && bat.battery_discharging_time_min != null ? R('fa-hourglass-half', '남은 사용 시간', this.fmtMin(bat.battery_discharging_time_min)) : ''
+                ].join(''), Number.isNaN(lvl) ? '이 브라우저는 배터리 정보를 알려주지 않아요. (iPhone Safari 등)' : ''));
+
+                parts.push(this.section('fa-wifi', '인터넷', [
+                    R('fa-wifi', '연결 상태', bat.online ? '온라인' : '오프라인'),
+                    R('fa-signal', '연결 종류', bat.network_type === 'Unknown' ? '확인 불가' : bat.network_type.toUpperCase()),
+                    bat.connection_medium ? R('fa-network-wired', '연결 방식', bat.connection_medium) : '',
+                    R('fa-bolt-lightning', '예상 속도', bat.downlink_mbps != null ? `${bat.downlink_mbps} Mbps` : null),
+                    R('fa-stopwatch', '지연시간', bat.rtt_ms != null ? `${bat.rtt_ms} ms` : null),
+                    R('fa-leaf', '데이터 절약 모드', this.yn(bat.save_data))
                 ].join('')));
 
-                parts.push(this.section('저장공간', [
-                    this.row('fa-database', '사용 중 / 전체',
-                        d.storage.quota_mb ? `${d.storage.usage_mb ?? 0} MB / ${d.storage.quota_mb} MB` : '측정 불가')
-                ].join('')));
+                parts.push(this.section('fa-database', '저장공간', [
+                    R('fa-database', '사용 중 / 전체', hasQuota ? `${this.fmtMB(d.storage.usage_mb)} / ${this.fmtMB(d.storage.quota_mb)}` : null),
+                    R('fa-box-archive', '로컬 저장소', this.yn(d.storage.local_storage)),
+                    R('fa-table', 'IndexedDB', this.yn(d.storage.indexed_db)),
+                    R('fa-gears', '서비스 워커', this.yn(d.storage.service_worker))
+                ].join(''), '기기 전체 용량이 아니라 이 사이트가 쓸 수 있는 브라우저 공간이에요.'));
 
-                parts.push(this.section('언어 · 시간대', [
-                    this.row('fa-language', '사용 언어', d.software.language),
-                    this.row('fa-clock', '시간대', d.locale.timezone)
+                parts.push(this.section('fa-language', '언어 · 시간', [
+                    R('fa-language', '사용 언어', d.software.language),
+                    R('fa-list', '언어 우선순위', d.software.languages),
+                    R('fa-earth-asia', '시간대', `${d.locale.timezone} (UTC${d.locale.timezone_offset_minutes >= 0 ? '+' : '-'}${Math.abs(d.locale.timezone_offset_minutes / 60)})`),
+                    R('fa-clock', '현재 시각', d.locale.local_time),
+                    R('fa-business-time', '시간 표기', d.locale.hour_cycle),
+                    R('fa-hourglass-start', '이 페이지 연 지', d.status.page_open_minutes + '분')
                 ].join('')));
 
                 if (d.media_devices) {
-                    parts.push(this.section('연결된 미디어 장치', [
-                        this.row('fa-microphone', '감지된 마이크', (d.media_devices.audio_input ?? '확인 불가') + (typeof d.media_devices.audio_input === 'number' ? '개' : '')),
-                        this.row('fa-video', '감지된 카메라', (d.media_devices.video_input ?? '확인 불가') + (typeof d.media_devices.video_input === 'number' ? '개' : '')),
-                        this.row('fa-volume-high', '감지된 스피커', (d.media_devices.audio_output ?? '확인 불가') + (typeof d.media_devices.audio_output === 'number' ? '개' : ''))
+                    const m = d.media_devices;
+                    parts.push(this.section('fa-headset', '연결된 미디어 장치', [
+                        R('fa-microphone', '마이크', n(m.audio_input, '개')),
+                        R('fa-video', '카메라', n(m.video_input, '개')),
+                        R('fa-volume-high', '스피커', n(m.audio_output, '개'))
                     ].join('')));
                 }
 
                 if (d.permissions) {
-                    const permRows = Object.entries(d.permissions).map(([name, permState]) => {
-                        const badgeClass = L.permissionBadgeClass[permState] || L.permissionBadgeClass.unsupported;
-                        const label = L.permissionName[name] || name;
-                        const stateLabel = L.permission[permState] || permState;
-                        return `
-                            <div class="flex justify-between items-center p-3 rounded-2xl surface border border-color">
-                                <span class="text-sm text-[var(--text-muted)]">${escapeHtml(label)}</span>
-                                <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full ${badgeClass}">${escapeHtml(stateLabel)}</span>
-                            </div>
-                        `;
-                    }).join('');
-                    parts.push(`
-                        <div>
-                            <h3 class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">권한 상태</h3>
-                            <div class="space-y-2">${permRows}</div>
-                            <p class="text-[11px] text-[var(--text-muted)] mt-2 leading-relaxed">직접 요청하지 않고, 브라우저가 이미 알고 있는 상태만 확인해요.</p>
+                    const permRows = Object.entries(d.permissions).map(([name, permState]) => `
+                        <div class="info-row">
+                            <span class="info-label">${escapeHtml(L.permissionName[name] || name)}</span>
+                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full ${L.permissionBadgeClass[permState] || L.permissionBadgeClass.unsupported}">${escapeHtml(L.permission[permState] || permState)}</span>
                         </div>
+                    `).join('');
+                    parts.push(this.section('fa-shield-halved', '권한 상태', permRows, '직접 요청하지 않고, 브라우저가 이미 알고 있는 상태만 확인해요.'));
+                }
+
+                if (d.features) {
+                    const FN = { webgl2: 'WebGL 2', webgpu: 'WebGPU', webassembly: 'WebAssembly', web_workers: '웹 워커', webrtc: '화상통화(WebRTC)', notifications: '알림', geolocation: '위치', vibration: '진동', share: '공유 시트', clipboard: '클립보드', speech_synthesis: '음성 읽기', gamepad: '게임패드', wake_lock: '화면 켜짐 유지', bluetooth: '블루투스', usb: 'USB' };
+                    const chips = Object.entries(d.features).map(([k, v]) =>
+                        `<span class="chip ${v ? 'ok' : 'no'}"><i class="fas ${v ? 'fa-check' : 'fa-xmark'}"></i>${escapeHtml(FN[k] || k)}</span>`).join('');
+                    parts.push(`
+                        <section class="md:col-span-2">
+                            <h3 class="section-title"><i class="fas fa-puzzle-piece"></i>브라우저 지원 기능</h3>
+                            <div class="flex flex-wrap gap-2">${chips}</div>
+                        </section>
                     `);
                 }
 
