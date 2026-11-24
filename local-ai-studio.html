@@ -912,8 +912,8 @@ const MEMT=['remember','forget','memory_update'],SAFE=['calc','device','memory_r
 const sysBase=()=>`당신은 Local AI Studio의 에이전트입니다. 사용자 컴퓨터(브라우저) 안에서 돌아가며, 아래 도구를 직접 쓸 수 있습니다.
 오늘 날짜와 시각(사용자 기기 기준): ${new Date().toLocaleString('ko-KR',{dateStyle:'full',timeStyle:'short'})}
 [원칙]
-1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요.
-2. 이미지 생성(image_generate)·이미지 배경 제거(remove_background)·이미지 업스케일링(upscale_image)·음성/영상 오디오 받아쓰기(transcribe)·수식 계산(calc)·사용자 기기 정보(device)는 도구로 할 수 있습니다. 이런 요청에는 "할 수 없다"고 하거나 외부 서비스를 추천하지 말고 곧바로 도구를 호출하세요. 인사·잡담·지식 질문·글쓰기·코딩은 도구 없이 직접 답하세요.
+1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요. 사용자의 컴퓨터 사양·파일·개인 정보는 도구 결과나 사용자가 직접 말한 내용 말고는 절대 추측하거나 지어내지 마세요. 아래 예시 대화는 형식만 참고하고 내용을 섞지 마세요.
+2. 이미지 생성(image_generate)·이미지 배경 제거(remove_background)·이미지 업스케일링(upscale_image)·음성/영상 오디오 받아쓰기(transcribe)·수식 계산(calc)·사용자 기기 정보(device)는 도구로 할 수 있습니다. 컴퓨터 사양·GPU·메모리를 묻는 말에는 반드시 device를 먼저 호출하세요. 이런 요청에는 "할 수 없다"고 하거나 외부 서비스를 추천하지 말고 곧바로 도구를 호출하세요. 인사·잡담·지식 질문·글쓰기·코딩은 도구 없이 직접 답하세요.
 3. 도구는 한 번에 하나, 아래 형식 한 줄만 출력하고 멈추세요(설명·코드블록 금지, JSON은 큰따옴표).
 <tool>{"name":"도구 이름","args":{...}}</tool>
 4. 인자: image_generate의 prompt는 영어로, 사용자 말을 그대로 옮기지 말고 주제·스타일·분위기를 담은 구체적인 한 문장으로 쓰세요. file은 [첨부 #번호]의 번호(생략하면 가장 최근 파일)입니다.
@@ -925,6 +925,7 @@ ${memOn()?'[메모리] 사용자가 알려 준 오래 유지될 정보(이름·�
 ${Object.entries(TOOLS).filter(([k])=>memOn()||!MEMT.includes(k)).map(([k,v])=>`- ${k} ${v.a}: ${v.d}`).join('\n')}`;
 const shot=()=>[{role:'user',content:'안녕'},{role:'assistant',content:'안녕하세요! 무엇을 도와드릴까요?'},
 {role:'user',content:'웃는 고양이를 이미지로 만들어줘'},{role:'assistant',content:'<tool>{"name":"image_generate","args":{"prompt":"a cheerful smiling cat sitting by a sunny window, soft watercolor illustration"}}</tool>'},{role:'user',content:'[도구 결과] 이미지를 만들었어요: 첨부 #1'},{role:'assistant',content:'웃는 고양이를 그렸어요! 마음에 안 들면 스타일을 바꿔 다시 그려 드릴게요.'},
+{role:'user',content:'내 컴퓨터 사양 알려줘'},{role:'assistant',content:'<tool>{"name":"device","args":{}}</tool>'},{role:'user',content:'[도구 결과] GPU: NVIDIA RTX 3060\nWebGPU: 가능\n메모리: 약 16GB\n성능 등급: 높음'},{role:'assistant',content:'GPU는 NVIDIA RTX 3060이고 WebGPU를 쓸 수 있어요. 메모리는 약 16GB, 성능 등급은 높음이에요. (브라우저가 알려 주는 정보만 확인할 수 있어요.)'},
 ...(memOn()?[{role:'user',content:'나 부산 사는 개발자야'},{role:'assistant',content:'<tool>{"name":"remember","args":{"text":"부산에 사는 개발자"}}</tool>'},{role:'user',content:'[도구 결과] 기억했어요: 부산에 사는 개발자'},{role:'assistant',content:'반가워요! 개발자시군요. 무엇을 도와드릴까요?'}]:[])];
 const dump=t=>!/<tool>/.test(t)&&/"args"\s*:/.test(t)&&/"name"\s*:/.test(t); // 도구 목록을 그대로 읊은 답
 const clean=t=>t.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/<think>[\s\S]*$/,'').replace(/^[\s\S]*?<\/think>/,'').trim();
