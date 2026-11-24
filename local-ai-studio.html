@@ -502,7 +502,7 @@ ${h.ok?'':'<div class="sub" style="margin-top:8px">최신 Chrome/Edge 데스크�
 <button class="card big" data-k="tool">🪄<b>이미지 처리</b><span class="sub">배경 제거 · 업스케일</span></button></div>
 <h3 class="sec">AI 도구</h3><div class="sub">목적에 맞는 모델을 도구 안에서 따로 받아, 내 컴퓨터에서 바로 작업해요.</div>
 <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><button class="card big" data-k="sub">📝<b>자막 추출</b><span class="sub">음성·영상에서 타임테이블과 자막 만들기</span></button></div>
-<div style="margin-top:auto;padding-top:28px;text-align:center"><button class="lnk" id="ag" title="도구를 쓰는 실험 기능">🧪 에이전트 모드 (실험)</button></div><div style="text-align:center;padding:16px 0 2px;font-size:11px;color:var(--sub);opacity:.7">© 2026 Dutkyobot. All rights reserved.</div>`;
+<div style="margin-top:auto;padding-top:28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><button class="lnk" id="ag" title="도구를 쓰는 실험 기능">🧪 에이전트 모드 (실험)</button><span style="font-size:11px;color:var(--sub);opacity:.7">© 2026 Dutkyobot. All rights reserved.</span></div>`;
 app.querySelectorAll('.big').forEach(b=>b.onclick=()=>pick(b.dataset.k));
 $('#gs').onclick=settings;
 $('#ag').onclick=async()=>{if(!st.hw)await detect();agent()};
