@@ -207,7 +207,8 @@ dialog.mdl{width:min(94vw,780px);max-width:none;height:min(82vh,680px);padding:0
 .cb .ch button{border:0;background:none;color:var(--ac);font:inherit;cursor:pointer;padding:2px 6px;border-radius:6px}.cb .ch button:hover{background:var(--ln)}.cb .ch button:disabled{opacity:.5;cursor:default}
 .cb pre{margin:0;padding:10px 12px;overflow:auto;max-height:360px;font-size:12.5px;white-space:pre;background:none;border:0}
 .co{margin:-4px 0 8px;padding:8px 12px;border-radius:10px;background:var(--card);border:1px solid var(--ln);font:12.5px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word;align-self:stretch}.co.bad{color:var(--bad)}
-.acts{display:flex;gap:6px;margin-top:-10px}.acts button,.uw .ed{border:0;background:none;color:var(--sub);font-size:12px;cursor:pointer;padding:3px 8px;border-radius:8px}.acts button:hover,.uw .ed:hover{background:var(--ln);color:var(--tx)}.uw .ed{align-self:flex-end}
+.acts{display:flex;align-items:center;gap:2px;margin-top:-10px}.ur{display:flex;align-items:center;gap:2px}.tm{font-size:12px;color:var(--sub);margin:0 6px}.acts .tm{margin-left:6px}
+.ib{border:0;background:none;color:var(--sub);cursor:pointer;padding:6px;border-radius:8px;display:flex}.ib:hover{background:var(--ln);color:var(--tx)}.ib.on,.ib.ok{color:var(--tx)}.ib.on svg[viewBox]{fill:currentColor;fill-opacity:.25}
 dialog.pvd{width:min(1000px,94vw);height:80vh;border:1px solid var(--ln);border-radius:14px;padding:0;background:var(--bg);color:var(--tx);flex-direction:column;overflow:hidden}dialog.pvd[open]{display:flex}dialog.pvd iframe{flex:1;border:0;background:#fff}
 .artp{width:min(46%,580px);flex:none;display:flex;flex-direction:column;gap:8px;border-left:1px solid var(--ln);padding-left:12px;min-height:0}.artp[hidden]{display:none}
 .artp .ah{display:flex;align-items:center;gap:4px;font-size:13px;min-width:0}.artp .ah b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.artp .ah button{border:0;background:none;color:var(--sub);cursor:pointer;font:inherit;padding:3px 8px;border-radius:8px;flex:none}.artp .ah button:hover,.artp .ah button.on{background:var(--ln);color:var(--tx)}
@@ -921,6 +922,11 @@ const FIC={text:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" str
 audio:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
 video:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg>'};
 // 사용자 메시지: 이미지는 말풍선 바로 위(1:1 작은 미리보기), 그 밖의 파일은 말풍선 아래 카드로
+const IC2={cp:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',sp:'<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12"/>',up:'<path d="M7 11v9H4v-9zM7 11l4-7a2 2 0 012 2v4h5.5a2 2 0 012 2.3l-1.2 6a2 2 0 01-2 1.7H7"/>',dn:'<path d="M7 13V4H4v9zM7 13l4 7a2 2 0 002-2v-4h5.5a2 2 0 002-2.3l-1.2-6a2 2 0 00-2-1.7H7"/>',rt:'<path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/>',ed:'<path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'};
+const ib=(k,tip,fn)=>{const b=document.createElement('button');b.className='ib';b.title=tip;b.dataset.k=k;b.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+IC2[k]+'</svg>';b.onclick=()=>fn(b);return b};
+const agoOf=t=>{if(!t)return'';const d=Math.max(0,Date.now()-t),m=Math.floor(d/6e4);return m<1?'방금 전':m<60?m+'분 전':m<1440?Math.floor(m/60)+'시간 전':Math.floor(m/1440)+'일 전'};
+const tmEl=m=>{const e=document.createElement('span');e.className='tm';e.textContent=agoOf(m.at);if(m.at)e.title=new Date(m.at).toLocaleString('ko-KR');return e};
+const copyBtn=(m,get)=>ib('cp','복사',async b=>{try{await navigator.clipboard.writeText(get(m));b.classList.add('ok');setTimeout(()=>b.classList.remove('ok'),1200)}catch(e){}});
 function drawUser(m){const w=document.createElement('div');w.className='uw';
 const fs=(m.att||[]).map(n=>{const a=ATT[chat.id+':'+n];if(a)return{n,name:a.name,type:a.type,a};const f=(m.fi||[]).find(x=>x.n===n);return f?{...f}:{n,name:'첨부 #'+n,type:'text'}});
 const ims=fs.filter(f=>f.type==='image'),oth=fs.filter(f=>f.type!=='image');
@@ -929,7 +935,7 @@ if(f.a){e.href=f.a.url;e.target='_blank';e.rel='noopener';e.title=f.name;const i
 if((m.t&&m.t!=='(첨부 파일)')||!fs.length){const b=document.createElement('div');b.className='m u';b.textContent=m.t;w.append(b)}
 if(oth.length){const r=document.createElement('div');r.className='uf2';for(const f of oth){const e=document.createElement(f.a?'a':'div');e.className='uf';if(f.a){e.href=f.a.url;e.target='_blank';e.rel='noopener'}
 e.innerHTML='<i>'+(FIC[f.type]||FIC.text)+'</i><div><b></b><span></span></div>';e.querySelector('b').textContent=f.name;e.querySelector('span').textContent=FL[f.type]||'문서';e.title=f.name;r.append(e)}w.append(r)}
-const ed=document.createElement('button');ed.className='ed';ed.textContent='✎ 편집';ed.onclick=()=>editMsg(m);w.append(ed);return w}
+const ur=document.createElement('div');ur.className='ur';ur.append(tmEl(m),ib('ed','편집',()=>editMsg(m)),copyBtn(m,x=>x.t==='(첨부 파일)'?'':x.t));w.append(ur);return w}
 function drawMem(m){const d=document.createElement('div');d.className='mc';const s=document.createElement('span');
 s.textContent=m.k==='upd'?'🧠 메모리를 고쳤어요: '+m.items.map(x=>x.o+' → '+x.d.t).join(' / '):(m.k==='add'?'🧠 메모리에 저장했어요: ':'🧠 메모리에서 지웠어요: ')+m.items.map(x=>x.d?x.d.t:x.t).join(' / ');d.append(s);return d}
 function drawMsg(m){if(m.r==='u')return drawUser(m);if(m.r==='tool'&&m.items&&m.items.length)return drawMem(m);if(m.r==='mem')return drawMem(m);const d=document.createElement('div');
@@ -1157,10 +1163,14 @@ const DONE={image_generate:'이미지를 만들었어요.',remove_background:'�
 if(!W.c&&DONE[c.name]&&att.length&&!/그리고|그다음|그 다음|하고|한 뒤|한뒤|후에|다음에|\bthen\b|\band\b|[&+]/i.test(lt)){const t=DONE[c.name]+' 더 필요한 게 있으면 말씀해 주세요.';chat.msgs.push({r:'a',t});box.append(drawMsg({r:'a',t}));sb();save();return}
 if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 멈췄어요.')}}
 // 마지막 답변 아래 '다시 생성', 내 메시지 옆 '편집'
-function addActs(){box.querySelectorAll('.acts').forEach(x=>x.remove());if(busy||!chat)return;const lm=chat.msgs[chat.msgs.length-1];if(!lm||!(lm.r==='u'||(lm.r==='a'&&!lm.h)))return;
-const a=document.createElement('div');a.className='acts';a.innerHTML='<button>🔄 다시 생성</button>';a.firstChild.onclick=regen;box.append(a);sb()}
+function addActs(){box.querySelectorAll('.acts,.ur .rt').forEach(x=>x.remove());if(busy||!chat)return;const lm=chat.msgs[chat.msgs.length-1];if(!lm||!(lm.r==='u'||(lm.r==='a'&&!lm.h)))return;
+if(lm.r==='u'){const us=box.querySelectorAll('.uw .ur'),u=us[us.length-1];if(u){const b=ib('rt','다시 생성',regen);b.classList.add('rt');u.insertBefore(b,u.children[1])}sb();return}
+const a=document.createElement('div');a.className='acts';a.append(copyBtn(lm,x=>clean(x.t)),
+ib('sp','소리내어 읽기',b=>{const ss=window.speechSynthesis;if(!ss)return;if(ss.speaking){ss.cancel();b.classList.remove('ok');return}const u=new SpeechSynthesisUtterance(clean(lm.t).replace(/```[\s\S]*?```/g,' ').replace(/[*#`>_~|-]+/g,' '));u.lang='ko-KR';u.onend=u.onerror=()=>b.classList.remove('ok');b.classList.add('ok');ss.speak(u)}));
+for(const [k,tip] of [['up','좋아요'],['dn','별로예요']]){const b=ib(k,tip,()=>{lm.fb=lm.fb===k?undefined:k;save();a.querySelectorAll('[data-k=up],[data-k=dn]').forEach(x=>x.classList.toggle('on',x.dataset.k===lm.fb))});if(lm.fb===k)b.classList.add('on');a.append(b)}
+a.append(ib('rt','다시 생성',regen),tmEl(lm));box.append(a);sb()}
 async function runTurn(){try{await turn()}catch(e){if(stopped)put('tl','중단했어요');else{put('m a','오류: '+errText(e.message));if(/GPU 연결이 끊겼/.test(errText(e.message))){for(const k of ['c','x'])if(W[k]){try{W[k].terminate()}catch(_){}W[k]=null;W[k+'m']=null}}}}
-busy=false;$('#sd').textContent='↑';save();drawList();addActs();autoArt();if(PF.noti&&document.hidden&&!stopped&&window.Notification&&Notification.permission==='granted'){try{new Notification('Local AI Studio',{body:'작업이 끝났어요'})}catch(e){}}}
+{const n=Date.now();for(let k=chat?chat.msgs.length-1:-1;k>=0&&chat.msgs[k].r!=='u';k--)if(!chat.msgs[k].at)chat.msgs[k].at=n}busy=false;$('#sd').textContent='↑';save();drawList();addActs();autoArt();if(PF.noti&&document.hidden&&!stopped&&window.Notification&&Notification.permission==='granted'){try{new Notification('Local AI Studio',{body:'작업이 끝났어요'})}catch(e){}}}
 async function regen(){if(busy||!chat)return;const lu=chat.msgs.map(x=>x.r).lastIndexOf('u');if(lu<0)return;chat.msgs=chat.msgs.slice(0,lu+1);busy=true;stopped=false;$('#sd').textContent='■';renderChat();save();await runTurn()}
 function editMsg(m){if(busy||!chat)return;const i=chat.msgs.indexOf(m);if(i<0)return;if(i<chat.msgs.length-1&&!confirm('이 메시지부터 이후 대화가 지워지고 다시 시작돼요. 계속할까요?'))return;
 chat.msgs=chat.msgs.slice(0,i);pend=[];for(const n of m.att||[]){const a=ATT[chat.id+':'+n];if(a)pend.push({blob:a.blob,name:a.name,type:a.type})}
@@ -1177,7 +1187,7 @@ if(!tx.trim()){tags.push(tg+'\n(읽을 수 있는 글자가 없어요 — 스캔
 else if(tx.length<=TXL){tags.push(tg+'\n```\n'+tx+'\n```');tq.push(tg+' (내용은 read_file로 다시 읽을 수 있어요)')}
 else{tags.push(tg+` — 전체 ${tx.length}자. 질문과 관련된 부분을 아래에 발췌해 붙여요.`);tq.push(tg+' (search_doc·read_file로 다시 찾을 수 있어요)')}}else{tags.push(tg);tq.push(tg)}}catch(e){put('tl','첨부 실패: '+e.message)}}
 pend=[];drawPend();$('#in').value='';$('#in').style.height='auto';
-const ex=await docCtx(t,ids),llm=(t||'')+(tags.length?'\n'+tags.join('\n'):'')+(ex?'\n'+ex:''),lq=(t||'')+(tq.length?'\n'+tq.join('\n'):''),um={r:'u',t:t||'(첨부 파일)',att:ids,fi,llm,...(lq!==llm?{lq}:{})}; // lq: 이전 턴에서는 파일 내용을 빼고 보냄(컨텍스트 절약)
+const ex=await docCtx(t,ids),llm=(t||'')+(tags.length?'\n'+tags.join('\n'):'')+(ex?'\n'+ex:''),lq=(t||'')+(tq.length?'\n'+tq.join('\n'):''),um={r:'u',at:Date.now(),t:t||'(첨부 파일)',att:ids,fi,llm,...(lq!==llm?{lq}:{})}; // lq: 이전 턴에서는 파일 내용을 빼고 보냄(컨텍스트 절약)
 if(chat.title==='새 채팅'){chat.title=(t||tq[0]||'새 채팅').slice(0,28)}
 chat.msgs.push(um);box.append(drawMsg(um));box.scrollTop=1e9;$('#ct').textContent=chat.title;drawList();drawInc();save();
 await runTurn()};
