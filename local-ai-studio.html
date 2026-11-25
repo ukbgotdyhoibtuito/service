@@ -158,7 +158,7 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .am{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}#mb{display:none}
 @media(max-width:700px){.ag{gap:0}.as{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:20;padding:16px 12px;transform:translateX(-105%);transition:transform .2s}.as.on{transform:none;border-right:1px solid var(--ln)}#mb{display:inline-block}.lg2{display:flex;padding:0}.am .m.u{max-width:90%}.ci button{opacity:1}}
 .ta,.tk{align-self:flex-start;max-width:100%;font-size:13.5px;color:var(--sub)}
-.ta>summary,.tk>summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ln);border-radius:10px;padding:5px 12px}
+.ta>summary,.tk>summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;border:0;outline:0;padding:2px 0}
 .ta>summary::-webkit-details-marker,.tk>summary::-webkit-details-marker{display:none}.ta>summary::after,.tk>summary::after{content:"";width:7px;height:7px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translateY(-2px);transition:transform .15s}
 .ta[open]>summary::after,.tk[open]>summary::after{transform:rotate(225deg) translate(-2px,0)}.ta>summary:hover,.tk>summary:hover{color:var(--tx)}
 .ta .tb{display:flex;flex-direction:column;margin-top:8px;border:1px solid var(--ln);border-radius:12px;background:var(--card);overflow:hidden}
@@ -951,13 +951,13 @@ if(m.r==='tool'&&m.att&&m.att.length&&m.nm&&!/^오류/.test(m.res||'')){d.classN
 const h=document.createElement('div');h.className='th2';h.innerHTML='<i>✓</i> ';h.append((LAB[m.nm]||m.nm)+(m.mdl?' · '+m.mdl:''));d.append(h);
 for(const n of m.att)drawAtt(d,ATT[chat.id+':'+n]);
 const dt=document.createElement('details');dt.innerHTML='<summary>세부 정보</summary><pre></pre>';dt.lastChild.textContent=m.t;d.append(dt);return d}
-if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d=document.createElement('details');d.className='tr';const ln=String(m.t||'').split('\n'),hd=ln[0].replace(/^🔧\s*/,'');d.innerHTML='<summary></summary><pre></pre>';d.firstChild.textContent=hd.length>90?hd.slice(0,90)+'…':hd;d.lastChild.textContent=ln.slice(1).join('\n').replace(/^→\s*/,'')||m.t}else{d.className='m a';d.innerHTML=md(m.t)}
+if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d=document.createElement('details');d.className='tr';const ln=String(m.t||'').split('\n'),KL={calc:'계산하기',device:'기기 정보 확인하기',run_js:'코드 실행하기',search_doc:'문서에서 찾기',read_file:'파일 읽기',remember:'기억 저장하기',memory_update:'기억 고치기',forget:'기억 지우기',memory_read:'기억 읽기',image_generate:'이미지 만들기',remove_background:'배경 지우기',upscale_image:'이미지 키우기',transcribe:'받아쓰기'},ok=!/^오류/.test(m.res||''),hd=m.nm&&KL[m.nm]?KL[m.nm]+(ok?'':' (실패)'):ln[0].replace(/^🔧\s*/,'');d.innerHTML='<summary></summary><pre></pre>';d.firstChild.textContent=hd.length>90?hd.slice(0,90)+'…':hd;d.lastChild.textContent=(m.nm&&m.args?'':'')+ln.join('\n')}else{d.className='m a';d.innerHTML=md(m.t)}
 if(m.att&&m.att.length){const h=document.createElement('div');h.style.marginTop='6px';for(const n of m.att)drawAtt(h,ATT[chat.id+':'+n]);d.append(h)}return d}
 // 도구 사용 기록(계산·메모리·오류 등)은 연달아 나오면 하나의 접이식 '도구 N개 사용'으로 묶어 답변 위에 둠. 결과물 카드(이미지·파일)는 그대로 보임
 const isCard=m=>m.r==='tool'&&m.att&&m.att.length&&m.nm&&!/^오류/.test(m.res||'');
 function addMsg(m){if(m.r!=='tool'||isCard(m)){box.append(drawMsg(m));return}
 let ta=box.lastElementChild;if(!ta||!ta.classList.contains('ta')){ta=document.createElement('details');ta.className='ta';ta.n=0;ta.innerHTML='<summary></summary><div class="tb"></div>';box.append(ta)}
-ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='도구 '+(++ta.n)+'개 사용함'}
+ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='작업 '+(++ta.n)+'개 실행함'}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
 if(chat){ap.hidden=true;for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}addActs()}
 else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','코드로 1부터 100까지 소수 구해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
@@ -1108,7 +1108,7 @@ return l.length?'\n[사용자 설정] 사용자가 직접 정한 응답 방식�
 const sysBase=()=>`당신은 Local AI Studio의 에이전트입니다. 사용자 컴퓨터(브라우저) 안에서 돌아가며, 아래 도구를 직접 쓸 수 있습니다.
 오늘 날짜(사용자 기기 기준): ${new Date().toLocaleDateString('ko-KR',{dateStyle:'full'})}
 [원칙]
-1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요. 사용자의 컴퓨터 사양·파일·개인 정보는 도구 결과나 사용자가 직접 말한 내용 말고는 절대 추측하거나 지어내지 마세요. 아래 예시 대화는 형식만 참고하고 내용을 섞지 마세요.
+1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 잡담엔 짧고 자연스럽게, 목록·제목·굵은 글씨는 여러 항목 비교나 단계별 안내처럼 꼭 필요할 때만 쓰고 보통은 문장과 문단으로 답하세요. 되묻는 질문은 한 번에 하나만 하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요. 사용자의 컴퓨터 사양·파일·개인 정보는 도구 결과나 사용자가 직접 말한 내용 말고는 절대 추측하거나 지어내지 마세요. 아래 예시 대화는 형식만 참고하고 내용을 섞지 마세요.
 2. 이미지 생성(image_generate)·이미지 배경 제거(remove_background)·이미지 업스케일링(upscale_image)·음성/영상 오디오 받아쓰기(transcribe)·수식 계산(calc)·사용자 기기 정보(device)는 도구로 할 수 있습니다. 컴퓨터 사양·GPU·메모리를 묻는 말에는 반드시 device를 먼저 호출하세요. 이런 요청에는 "할 수 없다"고 하거나 외부 서비스를 추천하지 말고 곧바로 도구를 호출하세요. 복잡한 계산·정렬·데이터 처리는 run_js로 코드를 돌려 정확히 구하세요. 인사·잡담·지식 질문·글쓰기·코딩은 도구 없이 직접 답하세요.
 3. 도구는 한 번에 하나, 아래 형식 한 줄만 출력하고 멈추세요(설명·코드블록 금지, JSON은 큰따옴표).
 <tool>{"name":"도구 이름","args":{...}}</tool>
