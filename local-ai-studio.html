@@ -157,7 +157,15 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .ci span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ci button{background:none;border:0;color:var(--sub);cursor:pointer;opacity:0;padding:0 4px}.ci:hover button{opacity:1}
 .am{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}#mb{display:none}
 @media(max-width:700px){.ag{gap:0}.as{position:fixed;top:0;bottom:0;left:0;width:78%;max-width:300px;background:var(--bg);z-index:20;padding:16px 12px;transform:translateX(-105%);transition:transform .2s}.as.on{transform:none;border-right:1px solid var(--ln)}#mb{display:inline-block}.lg2{display:flex;padding:0}.am .m.u{max-width:90%}.ci button{opacity:1}}
-.ta{align-self:flex-start;max-width:100%;font-size:12.5px;color:var(--sub);border:1px solid var(--ln);border-radius:12px;padding:7px 12px;background:var(--card)}.ta summary{cursor:pointer}.ta .tb{display:flex;flex-direction:column;gap:6px;margin-top:8px}.ta .tl{align-self:stretch;max-width:100%}.tk{align-self:flex-start;max-width:100%;font-size:12.5px;color:var(--sub);border-left:2px solid var(--ln);padding:2px 0 2px 10px}.tk summary{cursor:pointer;user-select:none}.tk .tkb{white-space:pre-wrap;word-break:break-word;margin-top:6px;max-height:260px;overflow:auto;line-height:1.55}
+.ta,.tk{align-self:flex-start;max-width:100%;font-size:13.5px;color:var(--sub)}
+.ta>summary,.tk>summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ln);border-radius:10px;padding:5px 12px}
+.ta>summary::-webkit-details-marker,.tk>summary::-webkit-details-marker{display:none}.ta>summary::after,.tk>summary::after{content:"";width:7px;height:7px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+.ta[open]>summary::after,.tk[open]>summary::after{transform:rotate(225deg) translate(-2px,0)}.ta>summary:hover,.tk>summary:hover{color:var(--tx)}
+.ta .tb{display:flex;flex-direction:column;margin-top:8px;border:1px solid var(--ln);border-radius:12px;background:var(--card);overflow:hidden}
+.tr{border-top:1px solid var(--ln)}.tr:first-child{border-top:0}.tr>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}.tr>summary::-webkit-details-marker{display:none}.tr>summary::after{content:"›";font-size:16px;line-height:1;transition:transform .15s}.tr[open]>summary::after{transform:rotate(90deg)}.tr>summary:hover{color:var(--tx)}
+.tr pre{margin:0;padding:0 14px 12px;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:12.5px;max-height:240px;overflow:auto}
+.ta .mc{border:0;border-top:1px solid var(--ln);border-radius:0;max-width:100%;padding:10px 14px}.ta .tb>:first-child{border-top:0}
+.tk .tkb{white-space:pre-wrap;word-break:break-word;margin-top:8px;max-height:260px;overflow:auto;line-height:1.6;border:1px solid var(--ln);border-radius:12px;background:var(--card);padding:12px 14px}
 .tl{align-self:flex-start;max-width:92%;font-size:12.5px;color:var(--sub);border-left:2px solid var(--ln);padding:2px 10px;white-space:pre-wrap;word-break:break-word}
 .uw{align-self:flex-end;max-width:82%;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .am .uw .m.u{max-width:100%;align-self:auto}
@@ -938,18 +946,18 @@ e.innerHTML='<i>'+(FIC[f.type]||FIC.text)+'</i><div><b></b><span></span></div>';
 const ur=document.createElement('div');ur.className='ur';ur.append(tmEl(m),ib('ed','편집',()=>editMsg(m)),copyBtn(m,x=>x.t==='(첨부 파일)'?'':x.t));w.append(ur);return w}
 function drawMem(m){const d=document.createElement('div');d.className='mc';const s=document.createElement('span');
 s.textContent=m.k==='upd'?'🧠 메모리를 고쳤어요: '+m.items.map(x=>x.o+' → '+x.d.t).join(' / '):(m.k==='add'?'🧠 메모리에 저장했어요: ':'🧠 메모리에서 지웠어요: ')+m.items.map(x=>x.d?x.d.t:x.t).join(' / ');d.append(s);return d}
-function drawMsg(m){if(m.r==='u')return drawUser(m);if(m.r==='tool'&&m.items&&m.items.length)return drawMem(m);if(m.r==='mem')return drawMem(m);const d=document.createElement('div');
+function drawMsg(m){if(m.r==='u')return drawUser(m);if(m.r==='tool'&&m.items&&m.items.length)return drawMem(m);if(m.r==='mem')return drawMem(m);let d=document.createElement('div');
 if(m.r==='tool'&&m.att&&m.att.length&&m.nm&&!/^오류/.test(m.res||'')){d.className='tc';const LAB={image_generate:'🎨 이미지 생성',remove_background:'✂️ 배경 제거',upscale_image:'🔍 업스케일',transcribe:'📝 자막 추출'};
 const h=document.createElement('div');h.className='th2';h.innerHTML='<i>✓</i> ';h.append((LAB[m.nm]||m.nm)+(m.mdl?' · '+m.mdl:''));d.append(h);
 for(const n of m.att)drawAtt(d,ATT[chat.id+':'+n]);
 const dt=document.createElement('details');dt.innerHTML='<summary>세부 정보</summary><pre></pre>';dt.lastChild.textContent=m.t;d.append(dt);return d}
-if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d.className='tl';d.textContent=m.t}else{d.className='m a';d.innerHTML=md(m.t)}
+if(m.r==='u'){d.className='m u';d.textContent=m.t}else if(m.r==='tool'){d=document.createElement('details');d.className='tr';const ln=String(m.t||'').split('\n'),hd=ln[0].replace(/^🔧\s*/,'');d.innerHTML='<summary></summary><pre></pre>';d.firstChild.textContent=hd.length>90?hd.slice(0,90)+'…':hd;d.lastChild.textContent=ln.slice(1).join('\n').replace(/^→\s*/,'')||m.t}else{d.className='m a';d.innerHTML=md(m.t)}
 if(m.att&&m.att.length){const h=document.createElement('div');h.style.marginTop='6px';for(const n of m.att)drawAtt(h,ATT[chat.id+':'+n]);d.append(h)}return d}
 // 도구 사용 기록(계산·메모리·오류 등)은 연달아 나오면 하나의 접이식 '도구 N개 사용'으로 묶어 답변 위에 둠. 결과물 카드(이미지·파일)는 그대로 보임
 const isCard=m=>m.r==='tool'&&m.att&&m.att.length&&m.nm&&!/^오류/.test(m.res||'');
 function addMsg(m){if(m.r!=='tool'||isCard(m)){box.append(drawMsg(m));return}
 let ta=box.lastElementChild;if(!ta||!ta.classList.contains('ta')){ta=document.createElement('details');ta.className='ta';ta.n=0;ta.innerHTML='<summary></summary><div class="tb"></div>';box.append(ta)}
-ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='🔧 도구 '+(++ta.n)+'개 사용'}
+ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='도구 '+(++ta.n)+'개 사용함'}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
 if(chat){ap.hidden=true;for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}addActs()}
 else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','코드로 1부터 100까지 소수 구해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
@@ -1165,9 +1173,7 @@ if(i===5)put('tl','한 번에 쓸 수 있는 도구 횟수(6회)에 도달해 �
 // 마지막 답변 아래 '다시 생성', 내 메시지 옆 '편집'
 function addActs(){box.querySelectorAll('.acts,.ur .rt').forEach(x=>x.remove());if(busy||!chat)return;const lm=chat.msgs[chat.msgs.length-1];if(!lm||!(lm.r==='u'||(lm.r==='a'&&!lm.h)))return;
 if(lm.r==='u'){const us=box.querySelectorAll('.uw .ur'),u=us[us.length-1];if(u){const b=ib('rt','다시 생성',regen);b.classList.add('rt');u.insertBefore(b,u.children[1])}sb();return}
-const a=document.createElement('div');a.className='acts';a.append(copyBtn(lm,x=>clean(x.t)),
-ib('sp','소리내어 읽기',b=>{const ss=window.speechSynthesis;if(!ss)return;if(ss.speaking){ss.cancel();b.classList.remove('ok');return}const u=new SpeechSynthesisUtterance(clean(lm.t).replace(/```[\s\S]*?```/g,' ').replace(/[*#`>_~|-]+/g,' '));u.lang='ko-KR';u.onend=u.onerror=()=>b.classList.remove('ok');b.classList.add('ok');ss.speak(u)}));
-for(const [k,tip] of [['up','좋아요'],['dn','별로예요']]){const b=ib(k,tip,()=>{lm.fb=lm.fb===k?undefined:k;save();a.querySelectorAll('[data-k=up],[data-k=dn]').forEach(x=>x.classList.toggle('on',x.dataset.k===lm.fb))});if(lm.fb===k)b.classList.add('on');a.append(b)}
+const a=document.createElement('div');a.className='acts';a.append(copyBtn(lm,x=>clean(x.t)));
 a.append(ib('rt','다시 생성',regen),tmEl(lm));box.append(a);sb()}
 async function runTurn(){try{await turn()}catch(e){if(stopped)put('tl','중단했어요');else{put('m a','오류: '+errText(e.message));if(/GPU 연결이 끊겼/.test(errText(e.message))){for(const k of ['c','x'])if(W[k]){try{W[k].terminate()}catch(_){}W[k]=null;W[k+'m']=null}}}}
 {const n=Date.now();for(let k=chat?chat.msgs.length-1:-1;k>=0&&chat.msgs[k].r!=='u';k--)if(!chat.msgs[k].at)chat.msgs[k].at=n}busy=false;$('#sd').textContent='↑';save();drawList();addActs();autoArt();if(PF.noti&&document.hidden&&!stopped&&window.Notification&&Notification.permission==='granted'){try{new Notification('Local AI Studio',{body:'작업이 끝났어요'})}catch(e){}}}
