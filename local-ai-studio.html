@@ -765,7 +765,7 @@ $('#ho').onclick=home;$('#mb').onclick=()=>$('#as').classList.toggle('on');
 const avHtml=sz=>{const ph=localStorage.getItem(PHK);return ph?`<img class="av" style="width:${sz}px;height:${sz}px" src="${ph}" alt="">`:`<span class="av" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.5)}px">${(((PF.name||'D').trim()[0]||'D').toUpperCase()).replace(/[^\p{L}\p{N}]/gu,'')||'D'}</span>`};
 const drawMe=()=>{$('#me').innerHTML=avHtml(30)+'<span class="mei"><b></b><small>설정</small></span>';$('#me').querySelector('b').textContent=(PF.name||'').trim()||'나'};drawMe();
 $('#me').onclick=()=>{const dl=document.createElement('dialog');dl.className='mdl';let cur=null,tab='gen',memView=false;
-dl.innerHTML=`<div class="mh sh"><button class="btn ghost" id="mk" style="padding:4px 12px;min-height:0">←</button><b class="grow" id="mt"></b><button class="btn ghost del" id="md">삭제</button><button class="xb" id="mx" aria-label="닫기">✕</button></div><div class="sw"><nav class="sn"><div class="ssr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="sq" type="text" placeholder="설정 찾기" autocomplete="off"></div><div class="snl" id="sn"></div></nav><div class="sc"><div class="mbody" id="mbody"></div><div class="mf"><div class="sub" id="mm" style="min-height:1.2em;margin-bottom:6px"></div><div class="cp"><input type="text" id="mi" maxlength="100"><button class="circ" id="ma" title="전송">↑</button></div></div></div></div>`;
+dl.innerHTML=`<div class="mh sh"><button class="btn ghost" id="mk" style="padding:4px 12px;min-height:0">←</button><b class="grow" id="mt"></b><button class="btn ghost del" id="md">삭제</button><button class="xb" id="mx" aria-label="닫기">✕</button></div><div class="sw"><nav class="sn"><div class="ssr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="sq" type="text" placeholder="설정 찾기" autocomplete="off"></div><div class="snl" id="sn"></div></nav><div class="sc"><div class="mbody" id="mbody"></div><div class="mf"><div class="sub" id="mm" style="min-height:1.2em;margin-bottom:6px"></div><div class="cp"><input type="text" id="mi" maxlength="100" placeholder="AI에게 바꿀 내용을 알려 주세요"><button class="circ" id="ma" title="전송">↑</button></div></div></div></div>`;
 document.body.append(dl);const q=s=>dl.querySelector(s),body=q('#mbody');
 const IMP_PROMPT='지금까지 나와의 대화에서 알게 된 나에 대한 정보를 아래 형식 그대로만 출력해 주세요. 인사말·설명 없이 형식만, 한 줄에 한 문장씩, 비밀번호·카드번호·주민번호 같은 민감한 정보는 빼 주세요.\n\n[나] 프로필\n- (이름·직업·사는 곳 등 나에 대한 사실)\n[나] 응답 선호\n- (내가 원하는 말투·답변 방식)\n[영역] 주제 이름\n- (내가 진행 중인 일·공부·관심사. 주제마다 이 블록을 반복)';
 function impPanel(b){if(b.querySelector('.imp'))return;const d=document.createElement('div');d.className='imp';d.style.cssText='margin-top:12px;border:1px solid var(--ln);border-radius:12px;padding:12px;background:var(--card)';
@@ -841,7 +841,7 @@ h.querySelector('h2').textContent=f.name;if(f.sec==='area'){const rn=document.cr
 const ul=h.querySelector('ul');for(const d of f.det){const li=document.createElement('li'),sp=document.createElement('span'),x=document.createElement('button');sp.textContent=d.t;x.textContent='✕';x.title='삭제';
 x.onclick=()=>{f.det=f.det.filter(y=>y!==d);if(!f.det.length){M.files=M.files.filter(y=>y!==f);cur=null}else f.at=Date.now();mSave();draw()};li.append(sp,x);ul.append(li)}body.append(h);return}
 const TB={gen:tabGen,look:tabLook,fn:tabFn,noti:tabNoti,dat:tabDat,ins:tabIns};if(tab!=='ins'||!memView){TB[tab](body);return}
-const o=document.createElement('div');o.className='sub';o.style.margin='4px 0 12px';o.textContent='AI가 기억한 내용이에요. 항목을 눌러 보고 ✕로 지울 수 있어요. 아래 입력칸에 "기억해 줘", "잊어줘"라고 적어도 돼요.';body.append(o);
+const o=document.createElement('div');o.className='sub';o.style.margin='4px 0 12px';o.textContent='AI가 기억한 내용이에요. 항목을 눌러 보고 ✕로 지울 수 있어요. 아래 입력칸에 바꿀 내용을 말로 적으면 AI가 고쳐요. (대화 모델이 켜져 있을 때)';body.append(o);
 for(const [sec,lab] of [['me','나'],['area','영역']]){const fs=M.files.filter(x=>x.sec===sec).sort((a,b)=>(sec==='me'?(a.key==='profile'?-1:b.key==='profile'?1:0):0)||a.name.localeCompare(b.name));if(!fs.length)continue;
 const hd=document.createElement('div');hd.className='mh2';hd.textContent=lab;body.append(hd);
 for(const f of fs){const b=document.createElement('button');b.className='mr';b.innerHTML='<span class="n"></span><span class="s"></span><span class="s t"></span>';b.children[0].textContent=f.name;b.children[1].textContent=mSum(f);b.children[2].textContent=ago(f.at)+' 업데이트됨';b.onclick=()=>{cur=f.id;draw()};body.append(b)}}
@@ -851,8 +851,17 @@ r.children[0].onclick=()=>{const fi=document.createElement('input');fi.type='fil
 if(r.children[1]){r.children[1].onclick=()=>{const u=URL.createObjectURL(memZip()),a=document.createElement('a');a.href=u;a.download='memory.zip';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)};
 r.children[2].onclick=()=>{if(confirm('기억한 내용을 모두 지울까요?')){M.files=[];mSave();draw()}}}body.append(r);
 const r2=document.createElement('div');r2.className='row';r2.style.cssText='margin-top:8px;justify-content:flex-end';r2.innerHTML='<button class="btn ghost" style="padding:4px 12px;font-size:13px">다른 AI에서 메모리 가져오기</button>';r2.firstChild.onclick=()=>impPanel(body);body.append(r2)}};
-const go=()=>{const i=q('#mi'),v=i.value.trim();if(!v)return;const f=cur&&M.files.find(x=>x.id===cur);let msg='';
-if(RE_FOR.test(v)&&!/[?？]\s*$/.test(v)){const t=v.replace(RE_FOR,' ').replace(RE_JUNK,' ').replace(/\s+/g,' ').replace(/^[\s.,!?~]+|[\s.,!?~]+$/g,''),it=t.length>=2?mForget(t):[];msg=it.length?'잊었어요: '+it.map(x=>x.d.t).join(' / '):'그런 내용은 기억하고 있지 않아요'}
+const aiEdit=async v=>{if(!M.on||busy||!W.c||!W.cm)return null;const L=[];for(const f of M.files)for(const d of f.det)L.push(d.t);
+const out=await new Promise(res=>{const w=W.c;let acc='';const t=setTimeout(()=>{w.postMessage({type:'stop'});res('')},60000);w.onmessage=({data:d})=>{if(d.type==='tok')acc+=d.t;else if(d.type==='done'){clearTimeout(t);res(clean(acc))}else if(d.type==='err'){clearTimeout(t);res('')}};
+w.postMessage({type:'chat',noThink:true,max:300,gap:0,messages:[{role:'system',content:'사용자의 요청대로 "기억 목록"을 고칩니다. 아래 JSON 한 줄만 출력하세요(설명 금지).\n{"ops":[{"a":"add","t":"새로 기억할 한 문장"},{"a":"upd","o":"고칠 기존 항목의 일부","t":"바뀐 한 문장"},{"a":"del","o":"지울 항목의 일부"}]}\n요청과 상관없는 항목은 건드리지 말고, 할 일이 없으면 {"ops":[]}.\n[기억 목록]\n'+(L.slice(0,60).map(x=>'- '+x).join('\n')||'(비어 있음)')},{role:'user',content:v}]})});
+const js=jsonAt(out);let j=null;try{j=js&&JSON.parse(js)}catch(e){}if(!j||!Array.isArray(j.ops))return null;
+const r=[];for(const o of j.ops.slice(0,6)){const a=o&&o.a,t=String(o&&o.t||'').trim(),x=String(o&&o.o||'').trim();
+if(a==='add'&&t){const q=mAdd(t,'user');r.push(q.err?q.err:q.dup?'이미 있어요: '+t:'추가: '+t)}
+else if(a==='upd'&&x&&t){const q=mUpdate(x,t);r.push(q.err?q.err:'수정: '+q.it.o+' → '+t)}
+else if(a==='del'&&x){const it=mForget(x);r.push(it.length?'삭제: '+it.map(y=>y.d.t).join(' / '):'못 찾음: '+x)}}
+return r.length?r.join('\n'):'바꿀 내용을 찾지 못했어요'};
+const go=async()=>{const i=q('#mi'),v=i.value.trim();if(!v)return;const f=cur&&M.files.find(x=>x.id===cur);let msg='';q('#mm').textContent='AI가 기억을 고치는 중…';let ai=null;try{ai=await aiEdit(v)}catch(e){}
+if(ai!==null)msg=ai;else if(RE_FOR.test(v)&&!/[?？]\s*$/.test(v)){const t=v.replace(RE_FOR,' ').replace(RE_JUNK,' ').replace(/\s+/g,' ').replace(/^[\s.,!?~]+|[\s.,!?~]+$/g,''),it=t.length>=2?mForget(t):[];msg=it.length?'잊었어요: '+it.map(x=>x.d.t).join(' / '):'그런 내용은 기억하고 있지 않아요'}
 else if(!M.on)msg='메모리가 꺼져 있어요. 목록 화면에서 "메모리 사용"을 켜 주세요.';
 else{const t=v.replace(RE_REM,' ').replace(RE_JUNK,' ').replace(/\s+/g,' ').replace(/^[\s.,!?~]+|[\s.,!?~]+$/g,'')||v,r=f?mAdd(t,'user',f.key||'area',f.name):mAdd(t,'user');msg=r.err||(r.dup?'이미 기억하고 있어요':'저장했어요'+(r.it?' → '+r.it.n:''))}
 q('#mm').textContent=msg;i.value='';draw()};
@@ -1108,7 +1117,7 @@ return l.length?'\n[사용자 설정] 사용자가 직접 정한 응답 방식�
 const sysBase=()=>`당신은 Local AI Studio의 에이전트입니다. 사용자 컴퓨터(브라우저) 안에서 돌아가며, 아래 도구를 직접 쓸 수 있습니다.
 오늘 날짜(사용자 기기 기준): ${new Date().toLocaleDateString('ko-KR',{dateStyle:'full'})}
 [원칙]
-1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 잡담엔 짧고 자연스럽게, 목록·제목·굵은 글씨는 여러 항목 비교나 단계별 안내처럼 꼭 필요할 때만 쓰고 보통은 문장과 문단으로 답하세요. 되묻는 질문은 한 번에 하나만 하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요. 사용자의 컴퓨터 사양·파일·개인 정보는 도구 결과나 사용자가 직접 말한 내용 말고는 절대 추측하거나 지어내지 마세요. 아래 예시 대화는 형식만 참고하고 내용을 섞지 마세요.
+1. 사용자가 쓰는 언어(기본 한국어)로 답하세요. 간단한 질문엔 간단히, 설명이 필요한 질문엔 충분히 자세히 답하세요. 모르면 모른다고 하고, 하지 않은 일을 했다고 말하지 마세요. 사용자의 컴퓨터 사양·파일·개인 정보는 도구 결과나 사용자가 직접 말한 내용 말고는 절대 추측하거나 지어내지 마세요. 아래 예시 대화는 형식만 참고하고 내용을 섞지 마세요.
 2. 이미지 생성(image_generate)·이미지 배경 제거(remove_background)·이미지 업스케일링(upscale_image)·음성/영상 오디오 받아쓰기(transcribe)·수식 계산(calc)·사용자 기기 정보(device)는 도구로 할 수 있습니다. 컴퓨터 사양·GPU·메모리를 묻는 말에는 반드시 device를 먼저 호출하세요. 이런 요청에는 "할 수 없다"고 하거나 외부 서비스를 추천하지 말고 곧바로 도구를 호출하세요. 복잡한 계산·정렬·데이터 처리는 run_js로 코드를 돌려 정확히 구하세요. 인사·잡담·지식 질문·글쓰기·코딩은 도구 없이 직접 답하세요.
 3. 도구는 한 번에 하나, 아래 형식 한 줄만 출력하고 멈추세요(설명·코드블록 금지, JSON은 큰따옴표).
 <tool>{"name":"도구 이름","args":{...}}</tool>
