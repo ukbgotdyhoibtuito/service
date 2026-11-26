@@ -281,6 +281,13 @@ dialog.mdl{width:min(94vw,900px);height:min(86vh,720px);border-radius:16px}
 .mdl{border-radius:20px}.mdl .mh2{margin-top:22px}
 .fld input[type=text]{background:color-mix(in srgb,var(--tx) 7%,transparent);border-radius:10px}.fld input[type=text]:focus{outline:2px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .cta:focus{outline:2px solid color-mix(in srgb,var(--ac) 50%,transparent)}
+/* 사이트 자체 드롭다운 */
+.cdd{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--tx);font:inherit;cursor:pointer;padding:6px 8px;border-radius:10px;max-width:100%;white-space:nowrap}.cdd:hover{background:color-mix(in srgb,var(--tx) 8%,transparent)}.cdd span{overflow:hidden;text-overflow:ellipsis}.cdd svg{flex:none;color:var(--sub)}
+.am .top .cdd{font-size:15px;font-weight:600;max-width:300px}
+.cmn{position:fixed;z-index:60;min-width:200px;max-width:min(360px,calc(100vw - 16px));overflow:auto;background:var(--bg);border-radius:14px;padding:6px;box-shadow:0 8px 30px rgba(0,0,0,.28),0 0 0 1px color-mix(in srgb,var(--tx) 10%,transparent);display:flex;flex-direction:column;gap:1px}
+.cmn button{display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--tx);font:inherit;font-size:14px;text-align:left;padding:9px 10px;border-radius:9px;cursor:pointer}.cmn button:hover:not(:disabled){background:color-mix(in srgb,var(--tx) 9%,transparent)}
+.cmn button .cn{flex:1;min-width:0;white-space:nowrap}.cmn button small{color:var(--sub);font-size:12px;white-space:nowrap}.cmn button i{font-style:normal;width:14px;color:var(--ac);flex:none}
+.cmn button.nx .cn{color:var(--sub)}.cmn button:disabled{opacity:.4;cursor:default}.cmn button.on .cn{font-weight:600}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -825,7 +832,7 @@ const TABS=[['gen','내 정보','<circle cx="12" cy="8" r="4"/><path d="M4 21c0-
 ['dat','개인정보·데이터','<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>','개인정보 데이터 내보내기 삭제 파일 채팅']];
 const tabsFor=()=>{const k=(q('#sq').value||'').trim().toLowerCase();return k?TABS.filter(t=>(t[1]+' '+t[3]).toLowerCase().includes(k)):TABS};
 const fld=(lab,sub,ctrl)=>{const l=document.createElement('div');l.className='fld';l.innerHTML='<span><b></b><div class="sub"></div></span>';l.querySelector('b').textContent=lab;const sd=l.querySelector('.sub');if(sub)sd.textContent=sub;else sd.remove();if(ctrl)l.append(ctrl);return l};
-const sel=(opts,val,fn)=>{const e=document.createElement('select');e.className='cs';for(const [v,t] of opts){const o=document.createElement('option');o.value=v;o.textContent=t;e.append(o)}e.value=val;e.onchange=()=>fn(e.value);return e};
+const sel=(opts,val,fn)=>{const e=document.createElement('select');e.className='cs';for(const [v,t] of opts){const o=document.createElement('option');o.value=v;o.textContent=t;e.append(o)}e.value=val;e.onchange=()=>fn(e.value);const w=document.createElement('span');w.style.cssText='display:inline-flex;flex:none';w.append(e);cdd(e);return w};
 const secH=(b,t)=>{const h=document.createElement('div');h.className='mh2';h.textContent=t;b.append(h)};
 const pbtn=(t,fn,cls)=>{const x=document.createElement('button');x.className='cb2'+(cls?' '+cls:'');x.textContent=t;x.onclick=()=>fn(x);return x};
 function tgRow(lab,sub,on,fn,dis){const l=document.createElement('label');l.className='fld';l.style.cursor='pointer';l.innerHTML='<span><b></b><div class="sub"></div></span><span class="tg"><input type="checkbox"><i></i></span>';l.querySelector('b').textContent=lab;l.querySelector('.sub').textContent=sub;const c=l.querySelector('input');c.checked=!!on;c.disabled=!!dis;c.onchange=()=>fn(c.checked,c);return l}
@@ -1032,6 +1039,17 @@ $('#nc').onclick=()=>{if(busy)return;chat=null;S.cur=null;incNext=false;renderCh
 // ---------- 모델 ----------
 let think=false;const canThink=m=>!!m&&/^qwen/.test(m.id);
 const drawThink=()=>{const b=$('#tk2');if(!b)return;const ok=canThink(chatModel());b.hidden=!ok;b.classList.toggle('on',ok&&think)};
+function cdd(sel){if(sel._cdd)return;sel._cdd=1;const b=document.createElement('button');b.type='button';b.className='cdd';b.innerHTML='<span></span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';sel.style.display='none';sel.after(b);
+const lab=()=>{const o=sel.options[sel.selectedIndex];b.firstChild.textContent=o?o.text.split(' · ')[0]:''};lab();new MutationObserver(lab).observe(sel,{childList:true,subtree:true,attributes:true});sel.addEventListener('change',lab);
+const close=()=>{const m=document.querySelector('.cmn');if(m)m.remove();document.removeEventListener('pointerdown',out,true);document.removeEventListener('keydown',key,true);window.removeEventListener('resize',close)};
+const out=e=>{const m=document.querySelector('.cmn');if(m&&!m.contains(e.target)&&!b.contains(e.target))close()},key=e=>{if(e.key==='Escape'){e.stopPropagation();close()}};
+b.onclick=()=>{if(document.querySelector('.cmn')){close();return}const m=document.createElement('div');m.className='cmn';
+[...sel.options].forEach((o,i)=>{const r=document.createElement('button');r.type='button';r.disabled=o.disabled;const [n,...rest]=o.text.split(' · ');r.innerHTML='<span class="cn"></span><small></small><i></i>';r.querySelector('.cn').textContent=n;r.querySelector('small').textContent=rest.join(' · ');if(o.classList.contains('nx'))r.classList.add('nx');if(i===sel.selectedIndex){r.classList.add('on');r.lastChild.textContent='✓'}
+r.onclick=()=>{close();if(i!==sel.selectedIndex){sel.selectedIndex=i;lab();sel.dispatchEvent(new Event('change',{bubbles:true}))}};m.append(r)});
+(sel.closest('dialog')||document.body).append(m);const R=b.getBoundingClientRect(),H=m.offsetHeight,W=Math.max(m.offsetWidth,R.width),below=innerHeight-R.bottom,top=below>=H+12||below>R.top?R.bottom+6:R.top-H-6;
+m.style.top=Math.max(8,top)+'px';m.style.maxHeight=Math.max(160,(below>=H+12||below>R.top?below:R.top)-18)+'px';
+if(b.closest('.fld'))m.style.left=Math.max(8,R.right-W)+'px';else m.style.left=Math.min(R.left,innerWidth-W-8)+'px';
+setTimeout(()=>{document.addEventListener('pointerdown',out,true);document.addEventListener('keydown',key,true);window.addEventListener('resize',close)},0)}}
 const chatModel=()=>{const id=(chat&&chat.model)||S.model;return MODELS.find(m=>m.id===id&&m.kind==='chat')||null};
 async function drawModels(){const sel=$('#ms'),urls=await cacheUrls(),cur=chatModel(),rows=[];
 for(const m of MODELS.filter(x=>x.kind==='chat'))rows.push({m,c:await cached(m,urls),f:fit(m)});
@@ -1050,7 +1068,7 @@ lock=true;q('.pb').hidden=true;q('.pg').hidden=false;const bar=q('.bar'),pt=q('.
 try{await getW(m,(t,p)=>{pt.textContent=t;if(p!=null){bar.classList.remove('ind');bar.firstChild.style.width=p+'%'}else bar.classList.add('ind')});lock=false;setModel(m);fin(true)}
 catch(e){lock=false;bar.classList.remove('ind');pt.textContent='오류: '+errText(e.message);q('.pb').hidden=false;q('.dy').remove();q('.dn').textContent='닫기'}};
 dl.showModal()})}
-$('#ms').onchange=async e=>{if(busy){drawModels();return}const m=MODELS.find(x=>x.id===e.target.value);if(!m){drawModels();return}
+cdd($('#ms'));$('#ms').onchange=async e=>{if(busy){drawModels();return}const m=MODELS.find(x=>x.id===e.target.value);if(!m){drawModels();return}
 if(await cached(m))setModel(m);else{await pickDl(m);drawModels()}};
 // ---------- 상태 표시줄 / 다운로드 허락 카드 ----------
 function status(){const d=put('tl');d.innerHTML='<span></span><div class="bar" style="height:4px;margin:4px 0 0"><i></i></div>';const sp=d.firstChild,bar=d.lastChild;bar.classList.add('ind');
