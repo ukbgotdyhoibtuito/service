@@ -1227,13 +1227,13 @@ const t=[];for(const m of MODELS.filter(pr))t.push(`${m.id}(${fmt(m.gb)}${await 
 MLS={at:Date.now(),t:'\n도구의 model 인자(선택)로 고를 수 있는 모델입니다. 사용자가 특정 모델이나 "더 좋은/더 빠른 모델"을 요청할 때만 지정하고, 아니면 생략하세요. 보통 용량이 클수록 좋지만 느려요. 설치 안 된 모델은 사용자에게 다운로드 허락을 물어봐요.\n'+ls.join('\n')};return MLS.t}
 async function sysNow(){return sysBase()+await modelNote()+prefBlock()+skBlock()+memBlock()}
 // 모델의 생각(<think>)은 버리지 않고 답변 위 접이식 '생각' 블록으로 보여 주고 대화에도 남김 (클로드처럼: 생각하는 동안 펼쳐지고 끝나면 접힘)
-const thOf=t=>{const m=t.match(/<think>([\s\S]*?)(?:<\/think>|$)/);if(m)return m[1].trim();const i=t.indexOf('</think>');return i>=0?t.slice(0,i).trim():''};
+const thOf=t=>{const m=t.match(/<think>([\s\S]*?)(?:<\/think>|$)/);if(m)return m[1].replace(/<think>/g,'').trim();const i=t.indexOf('</think>');return i>=0?t.slice(0,i).trim():''};
 function drawTk(th,sec,open){const d=document.createElement('details');d.className='tk';d.open=!!open;d.innerHTML='<summary></summary><div class="tkb"></div>';d.firstChild.textContent=open?'생각 중…':'생각'+(sec?' '+sec+'초':'');d.lastChild.textContent=th;return d}
 let lastTh={th:'',sec:0};
-const llm=(w,m,el,sys)=>new Promise((res,rej)=>{let acc='',rq=0,tk=null,t0=0;const paint=()=>{rq=0;const c=clean(acc),th=thOf(acc);
+const llm=(w,m,el,sys)=>new Promise((res,rej)=>{const tm=think&&canThink(m);let acc=tm?'<think>':'',rq=0,tk=null,t0=0;const paint=()=>{rq=0;const c=clean(acc),th=thOf(acc);
 if(th){if(!tk){tk=drawTk(th,0,1);el.before(tk)}else tk.lastChild.textContent=th;tk.lastChild.scrollTop=1e9}el.style.display=th&&!c?'none':'';
 if(c.includes('<tool>'))el.textContent='🔧 도구를 고르는 중…';else if(c)el.innerHTML=md(c);else el.textContent='생각 중…';sb()};
-w.onmessage=({data:d})=>{if(d.type==='tok'){if(!t0)t0=Date.now();acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);const th=thOf(acc),sec=t0?Math.max(1,Math.round((Date.now()-t0)/1000)):0;lastTh={th:th.slice(0,4000),sec};if(th){if(!tk){tk=drawTk(th,sec);el.before(tk)}tk.open=false;tk.firstChild.textContent='생각 '+sec+'초'}el.style.display='';res(clean(acc))}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
+w.onmessage=({data:d})=>{if(d.type==='tok'){if(!t0)t0=Date.now();acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);if(tm&&!acc.includes('</think>')){acc=acc.slice(7).replace(/<think>/g,'');if(tk){tk.remove();tk=null}}const th=thOf(acc),sec=t0?Math.max(1,Math.round((Date.now()-t0)/1000)):0;lastTh={th:th.slice(0,4000),sec};if(th){if(!tk){tk=drawTk(th,sec);el.before(tk)}tk.open=false;tk.firstChild.textContent='생각 '+sec+'초'}el.style.display='';res(clean(acc))}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
 w.postMessage({type:'chat',noThink:canThink(m)?!think:m.noThink,max:(st.maxUser?st.max:autoMax(m))*(think&&canThink(m)?2:1),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:sys||sysBase()},...shot(),...history()]})});
 // ---------- 대화 진행 ----------
 const toEn=(w,m,t)=>new Promise(res=>{let acc='';w.onmessage=({data:d})=>{if(d.type==='tok')acc+=d.t;else if(d.type==='done')res(clean(acc).replace(/^["'`]+|["'`]+$/g,'').trim());else if(d.type==='err')res('')};
