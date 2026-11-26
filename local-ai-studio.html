@@ -248,19 +248,23 @@ dialog.mdl{width:min(94vw,900px);height:min(86vh,720px);border-radius:16px}
 .avb{border:0;background:none;padding:0;cursor:pointer;display:flex;flex:none}.avb .av{margin:0}
 .cta{width:100%;box-sizing:border-box;margin:10px 0 4px;border:0;border-radius:12px;background:color-mix(in srgb,var(--tx) 7%,transparent);color:var(--tx);padding:12px 14px;font:inherit;resize:vertical;outline:0}
 /* ---- 에이전트 화면: 전체 폭 + 윤곽선 없이 면으로 구분 ---- */
-.ag{height:100vh;height:100dvh;gap:0}
-.as{width:268px;background:var(--card);border:0;padding:14px 10px}
-.as .btn{border:0;background:transparent;justify-content:flex-start;text-align:left;border-radius:10px}.as .btn:hover{background:color-mix(in srgb,var(--tx) 8%,transparent)}.as #nc{background:color-mix(in srgb,var(--tx) 9%,transparent);font-weight:600}
+.ag{--sf:color-mix(in srgb,var(--tx) 5%,var(--bg));height:100vh;height:100dvh;gap:0}
+.as{width:268px;background:var(--sf);border:0;padding:14px 10px}
+.as .btn{border:0;background:color-mix(in srgb,var(--tx) 8%,transparent);justify-content:flex-start;text-align:left;border-radius:10px}.as .btn:hover{background:color-mix(in srgb,var(--tx) 14%,transparent)}.as #nc{background:var(--ac);color:#fff;font-weight:600}.as #nc:hover{filter:brightness(1.08);background:var(--ac)}
 .ci:hover,.ci.on{background:color-mix(in srgb,var(--tx) 8%,transparent)}
 .am{flex:1;min-width:0;padding:8px 22px 14px}
-.am .comp,.cp{border:0;background:var(--card);box-shadow:none}
-.am .m.a.card,.tc,.ta .tb,.tk .tkb,.mc,.chip,.am .m pre{border:0;background:var(--card)}
+.am .comp,.cp{border:0;background:var(--sf);box-shadow:none}
+.am .m.a.card,.tc,.ta .tb,.tk .tkb,.mc,.chip,.am .m pre{border:0;background:var(--sf)}
 .chip:hover{border:0;background:color-mix(in srgb,var(--tx) 9%,transparent)}
 .tr{border-top-color:color-mix(in srgb,var(--tx) 8%,transparent)}.ta .mc{border-top-color:color-mix(in srgb,var(--tx) 8%,transparent)}
 .ta>summary,.tk>summary{border:0}
-.artp{width:min(52%,760px);flex:none;background:var(--card);border:0;padding:12px 16px;gap:10px;margin:0}
+.artp{width:min(52%,760px);flex:none;background:var(--sf);border:0;padding:12px 16px;gap:10px;margin:0}
 .artp iframe{border:0;border-radius:12px}.artp pre{border:0;background:var(--bg);border-radius:12px}
-.uf,.ui{border:0;background:var(--card)}
+.uf,.ui{border:0;background:var(--sf)}
+/* 스크롤바는 화면 오른쪽 끝에, 대화는 가운데 한 줄로 */
+.am #msgs{max-width:none;width:100%;margin:0;padding:18px max(0px,calc((100% - var(--cw,760px))/2)) 10px}
+.as .lgo{align-items:center}.as .lgo #ho{margin-left:auto;padding:6px;min-height:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex:none}
+.ib{background:none}.ib:hover{background:color-mix(in srgb,var(--tx) 10%,transparent)}
 @media(max-width:700px){.am{padding:8px 12px 12px}.artp{position:fixed;inset:0;width:auto;z-index:30;background:var(--bg);padding:12px}}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
@@ -770,7 +774,7 @@ const savePf=()=>{try{localStorage.setItem('lais_agent_prefs',JSON.stringify(PF)
 const PHK='lais_agent_photo';
 const fitApp=()=>{app.style.maxWidth='none';app.style.padding='0';app.style.setProperty('--cw',PF.wide?'980px':'760px')};fitApp();applyLook(PF);
 // ---------- 화면 ----------
-app.innerHTML=`<div class="ag"><aside class="as" id="as"><div class="lgo"><i>✳</i> Local AI Studio <small class="xp">실험</small></div><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="me"></button><button class="btn ghost" id="ho">← 처음으로</button></aside>
+app.innerHTML=`<div class="ag"><aside class="as" id="as"><div class="lgo"><i>✳</i> Local AI Studio <small class="xp">실험</small><button class="btn ghost" id="ho" title="처음으로" aria-label="처음으로"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button></div><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="me"></button></aside>
 <section class="am"><div class="top" style="margin-bottom:2px"><button class="btn ghost" id="mb" aria-label="채팅 목록">☰</button><select id="ms" title="대화 모델 바꾸기"></select><b id="ct" hidden></b><span class="grow"></span><button class="btn ghost" id="ic" title="시크릿 채팅"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V11a7 7 0 0114 0v10l-2.5-2-2.3 2-2.2-2-2.2 2-2.3-2z"/><circle cx="9.5" cy="11" r=".6" fill="currentColor"/><circle cx="14.5" cy="11" r=".6" fill="currentColor"/></svg></button></div>
 <div id="msgs"></div><div id="pe" class="row" style="flex-wrap:wrap;gap:6px"></div>
 <div class="comp"><button class="circ" id="pa" title="파일 첨부 (이미지·오디오·영상·텍스트·PDF)" style="background:var(--bg);color:var(--tx);border:1px solid var(--ln)">＋</button><textarea id="in" rows="1" placeholder="메시지를 입력하세요"></textarea><button class="circ" id="sd" title="전송">↑</button></div>
@@ -784,7 +788,7 @@ $('#me').onclick=()=>{const dl=document.createElement('dialog');dl.className='md
 dl.innerHTML=`<div class="mh sh"><button class="btn ghost" id="mk" style="padding:4px 12px;min-height:0">←</button><b class="grow" id="mt"></b><button class="btn ghost del" id="md">삭제</button><button class="xb" id="mx" aria-label="닫기">✕</button></div><div class="sw"><nav class="sn"><div class="ssr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="sq" type="text" placeholder="설정 찾기" autocomplete="off"></div><div class="snl" id="sn"></div></nav><div class="sc"><div class="mbody" id="mbody"></div><div class="mf"><div class="sub" id="mm" style="min-height:1.2em;margin-bottom:6px"></div><div class="cp"><input type="text" id="mi" maxlength="100" placeholder="AI에게 바꿀 내용을 알려 주세요"><button class="circ" id="ma" title="전송">↑</button></div></div></div></div>`;
 document.body.append(dl);const q=s=>dl.querySelector(s),body=q('#mbody');
 const IMP_PROMPT='지금까지 나와의 대화에서 알게 된 나에 대한 정보를 아래 형식 그대로만 출력해 주세요. 인사말·설명 없이 형식만, 한 줄에 한 문장씩, 비밀번호·카드번호·주민번호 같은 민감한 정보는 빼 주세요.\n\n[나] 프로필\n- (이름·직업·사는 곳 등 나에 대한 사실)\n[나] 응답 선호\n- (내가 원하는 말투·답변 방식)\n[영역] 주제 이름\n- (내가 진행 중인 일·공부·관심사. 주제마다 이 블록을 반복)';
-function impPanel(b){if(b.querySelector('.imp'))return;const d=document.createElement('div');d.className='imp';d.style.cssText='margin-top:12px;border:1px solid var(--ln);border-radius:12px;padding:12px;background:var(--card)';
+function impPanel(b){if(b.querySelector('.imp'))return;const d=document.createElement('div');d.className='imp';d.style.cssText='margin-top:12px;border:1px solid var(--ln);border-radius:12px;padding:12px;background:var(--sf)';
 d.innerHTML='<b>다른 AI에서 메모리 가져오기</b><div class="sub" style="margin:6px 0">① 아래 프롬프트를 ChatGPT·Gemini 등 기존에 쓰던 AI에게 보내세요. ② 나온 답을 아래 칸에 붙여 넣고 가져오기를 누르세요.</div><textarea readonly rows="5" style="width:100%;box-sizing:border-box;border:1px solid var(--ln);border-radius:8px;background:none;color:var(--sub);padding:8px;font:12px/1.5 inherit"></textarea><div class="row" style="margin:6px 0 10px;justify-content:flex-end"><button class="btn ghost c1" style="padding:4px 12px;min-height:0;font-size:13px">프롬프트 복사</button></div><textarea class="pa" rows="5" placeholder="[나] 프로필&#10;- ..." style="width:100%;box-sizing:border-box;border:1px solid var(--ln);border-radius:8px;background:none;color:var(--tx);padding:8px;font:inherit"></textarea><div class="row" style="margin-top:8px;justify-content:flex-end;gap:6px"><button class="btn ghost x1" style="padding:4px 12px;min-height:0;font-size:13px">닫기</button><button class="btn go1" style="padding:4px 14px;min-height:0;font-size:13px">가져오기</button></div><div class="sub res" style="margin-top:6px;text-align:right"></div>';
 d.querySelector('textarea').value=IMP_PROMPT;const c1=d.querySelector('.c1');c1.onclick=async()=>{try{await navigator.clipboard.writeText(IMP_PROMPT);c1.textContent='복사됨'}catch(e){c1.textContent='실패'}setTimeout(()=>{c1.textContent='프롬프트 복사'},1200)};
 d.querySelector('.x1').onclick=()=>d.remove();d.querySelector('.go1').onclick=()=>{const n=mImport(d.querySelector('.pa').value);d.querySelector('.res').textContent=n?`${n}개를 가져왔어요`:'가져올 수 있는 내용이 없었어요 (형식을 확인해 주세요)'};b.append(d);d.scrollIntoView({block:'nearest'})}
@@ -1000,7 +1004,7 @@ let ta=box.lastElementChild;if(!ta||!ta.classList.contains('ta')){ta=document.cr
 ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='작업 '+(++ta.n)+'개 실행함'}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
 if(chat){ap.hidden=true;for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}addActs()}
-else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','코드로 1부터 100까지 소수 구해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div><div class="sub" style="margin-top:16px">이미지 생성 · 배경 제거 · 업스케일 · 자막 추출을 대화로 시킬 수 있어요</div></div>';
+else{box.innerHTML='<div class="empty"><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','코드로 1부터 100까지 소수 구해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div></div>';
 box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#in').value=b.textContent.replace(/ \(.*\)$/,'');$('#in').focus();$('#in').oninput({target:$('#in')})})}
 box.scrollTop=1e9;drawList();drawModels();drawInc()}
 function drawInc(){const b=$('#ic');b.classList.toggle('on',inc());b.style.opacity=inc()?1:.5;b.disabled=!!(chat&&chat.msgs.length);b.title=inc()?'시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요':'시크릿 채팅으로 시작 (새 채팅에서만 켤 수 있어요)'}
