@@ -1031,7 +1031,7 @@ const can=r=>r.f==='ok'||(r.f==='low'&&st.hw.ok);
 sel.innerHTML=(cur?'':'<option value="" disabled selected>모델 선택</option>')+rows.map(r=>`<option value="${r.m.id}" class="${r.c?'':'nx'}" ${cur&&cur.id===r.m.id?'selected':''} ${can(r)||r.c?'':'disabled'}>${r.m.name}${r.c?'':' · '+(can(r)?fmt(r.m.gb)+' · 미설치':'이 기기에선 어려움')}</option>`).join('');
 const have=rows.filter(r=>r.c).map(r=>r.m);
 if(!cur&&have.length){const h=st.hw||{},b=have.filter(m=>m.gb<=(h.cap||1.5)).pop()||have[0];setModel(b)}}
-function setModel(m){S.model=m.id;if(chat)chat.model=m.id;save();drawModels()}
+function setModel(m){S.model=m.id;if(chat)chat.model=m.id;save();drawModels();drawThink()}
 // 설치 안 된 대화 모델을 고르면 채팅이 아니라 팝업으로 허락을 묻고 진행 상황도 팝업에 보여 줌 (대화에 끼어들지 않음)
 function pickDl(m){return new Promise(res=>{const dl=document.createElement('dialog');let lock=false;dl.oncancel=e=>{if(lock)e.preventDefault()};
 dl.innerHTML=`<b>모델 다운로드</b><div style="font-weight:600;margin-top:10px"></div><div class="sub" style="margin:6px 0 12px">아직 받지 않은 모델이에요. 내 컴퓨터(브라우저)에 저장되고, 이후엔 인터넷 없이 써요.</div><div class="pg" hidden><div class="sub pt"></div><div class="bar" style="height:4px;margin:6px 0 0"><i></i></div></div><div class="row pb" style="margin-top:14px;justify-content:flex-end"><button class="btn ghost dn">취소</button><button class="btn dy">다운로드</button></div>`;
