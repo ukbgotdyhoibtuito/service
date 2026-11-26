@@ -1004,7 +1004,7 @@ let ta=box.lastElementChild;if(!ta||!ta.classList.contains('ta')){ta=document.cr
 ta.querySelector('.tb').append(drawMsg(m));ta.querySelector('summary').textContent='작업 '+(++ta.n)+'개 실행함'}
 function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새 채팅';
 if(chat){ap.hidden=true;for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}addActs()}
-else{box.innerHTML='<div class="empty"><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'<div class="chips">'+['웃는 고양이 그림 그려줘','코드로 1부터 100까지 소수 구해줘','내 컴퓨터 사양 알려줘','이 사진 배경 지워줘 (이미지 첨부)'].map(t=>'<button class="chip">'+t+'</button>').join('')+'</div></div>';
+else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'</div>';
 box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#in').value=b.textContent.replace(/ \(.*\)$/,'');$('#in').focus();$('#in').oninput({target:$('#in')})})}
 box.scrollTop=1e9;drawList();drawModels();drawInc()}
 function drawInc(){const b=$('#ic');b.classList.toggle('on',inc());b.style.opacity=inc()?1:.5;b.disabled=!!(chat&&chat.msgs.length);b.title=inc()?'시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요':'시크릿 채팅으로 시작 (새 채팅에서만 켤 수 있어요)'}
