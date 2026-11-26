@@ -429,6 +429,7 @@ postMessage({type:'tres',mask:mk.data,w:mk.dims.at(-1),h:mk.dims.at(-2)});
 const MODELS=[
 {id:'qwen3-06',kind:'chat',name:'Qwen3 0.6B',repo:'onnx-community/Qwen3-0.6B-ONNX',dtype:'q4f16',gb:0.5,minBuf:1,lang:'다국어(한국어 보통)',desc:'저사양·모바일용. 가볍고 빠른 기본 모델 (사고 모드 끔)',noThink:true,pri:1},
 {id:'qwen35-08',kind:'chat',cls:'Qwen3_5ForConditionalGeneration',name:'Qwen3.5 0.8B',repo:'onnx-community/Qwen3.5-0.8B-ONNX-OPT',dtype:{embed_tokens:'q4',vision_encoder:'fp16',decoder_model_merged:'q4'},gb:0.9,minBuf:1,lang:'다국어(한국어 양호)',desc:'저사양용 최신 세대. 0.6B급 크기에 더 나은 품질',noThink:true,pri:2},
+{id:'qwen35-2',kind:'chat',cls:'Qwen3_5ForConditionalGeneration',name:'Qwen3.5 2B',repo:'onnx-community/Qwen3.5-2B-ONNX-OPT',dtype:{embed_tokens:'q4',vision_encoder:'fp16',decoder_model_merged:'q4'},gb:1.8,minBuf:2,lang:'다국어(한국어 양호)',desc:'중간 사양용 최신 세대. 0.8B보다 똑똑하고 4B보다 가볍고 빠름',noThink:true,pri:4},
 {id:'gemma3-1',kind:'chat',name:'Gemma 3 1B IT',repo:'onnx-community/gemma-3-1b-it-ONNX',dtype:'q4',gb:0.8,minBuf:1,lang:'다국어(한국어 양호)',desc:'구글 소형 모델. 일반 사양의 한국어 대화용',pri:3},
 {id:'qwen3-17',kind:'chat',name:'Qwen3 1.7B',repo:'onnx-community/Qwen3-1.7B-ONNX',dtype:'q4f16',gb:1.3,minBuf:2,lang:'다국어(한국어 보통)',desc:'중간 사양용. 속도와 품질의 균형 (사고 모드 끔)',noThink:true,pri:4},
 {id:'qwen3-4',kind:'chat',name:'Qwen3 4B',repo:'onnx-community/Qwen3-4B-ONNX',dtype:'q4f16',gb:2.8,minBuf:2,lang:'다국어(한국어 양호)',desc:'고성능 GPU용. 검증된 큰 모델',noThink:true,pri:5},
