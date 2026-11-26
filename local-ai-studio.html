@@ -135,7 +135,7 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .tc details{font-size:12px;color:var(--sub)}.tc summary{cursor:pointer}.tc details pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:inherit}
 .lgo{display:flex;align-items:center;gap:6px;font-size:18px;font-weight:700;letter-spacing:-.02em;padding:2px 6px 8px;white-space:nowrap}.lgo i{font-style:normal;color:var(--ac)}
 .lg2{display:none}
-.am #msgs,.am #pe,.am .comp,.am .disc{width:100%;max-width:760px;margin-left:auto;margin-right:auto}
+.am #msgs,.am #pe,.am .comp,.am .disc{width:100%;max-width:var(--cw,760px);margin-left:auto;margin-right:auto}
 .am #msgs{gap:20px;padding:18px 0 10px}
 .am .m.a{background:none;border:0;border-radius:0;padding:0;max-width:100%;line-height:1.75}
 .am .m.a.card{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:14px;max-width:100%}
@@ -247,6 +247,21 @@ dialog.mdl{width:min(94vw,900px);height:min(86vh,720px);border-radius:16px}
 .cb2{border:0;border-radius:8px;background:color-mix(in srgb,var(--tx) 10%,transparent);color:var(--tx);font:inherit;font-size:13.5px;padding:7px 14px;cursor:pointer;flex:none}.cb2:hover:not(:disabled){background:color-mix(in srgb,var(--tx) 16%,transparent)}.cb2:disabled{opacity:.45;cursor:default}.cb2.del{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
 .avb{border:0;background:none;padding:0;cursor:pointer;display:flex;flex:none}.avb .av{margin:0}
 .cta{width:100%;box-sizing:border-box;margin:10px 0 4px;border:0;border-radius:12px;background:color-mix(in srgb,var(--tx) 7%,transparent);color:var(--tx);padding:12px 14px;font:inherit;resize:vertical;outline:0}
+/* ---- 에이전트 화면: 전체 폭 + 윤곽선 없이 면으로 구분 ---- */
+.ag{height:100vh;height:100dvh;gap:0}
+.as{width:268px;background:var(--card);border:0;padding:14px 10px}
+.as .btn{border:0;background:transparent;justify-content:flex-start;text-align:left;border-radius:10px}.as .btn:hover{background:color-mix(in srgb,var(--tx) 8%,transparent)}.as #nc{background:color-mix(in srgb,var(--tx) 9%,transparent);font-weight:600}
+.ci:hover,.ci.on{background:color-mix(in srgb,var(--tx) 8%,transparent)}
+.am{flex:1;min-width:0;padding:8px 22px 14px}
+.am .comp,.cp{border:0;background:var(--card);box-shadow:none}
+.am .m.a.card,.tc,.ta .tb,.tk .tkb,.mc,.chip,.am .m pre{border:0;background:var(--card)}
+.chip:hover{border:0;background:color-mix(in srgb,var(--tx) 9%,transparent)}
+.tr{border-top-color:color-mix(in srgb,var(--tx) 8%,transparent)}.ta .mc{border-top-color:color-mix(in srgb,var(--tx) 8%,transparent)}
+.ta>summary,.tk>summary{border:0}
+.artp{width:min(52%,760px);flex:none;background:var(--card);border:0;padding:12px 16px;gap:10px;margin:0}
+.artp iframe{border:0;border-radius:12px}.artp pre{border:0;background:var(--bg);border-radius:12px}
+.uf,.ui{border:0;background:var(--card)}
+@media(max-width:700px){.am{padding:8px 12px 12px}.artp{position:fixed;inset:0;width:auto;z-index:30;background:var(--bg);padding:12px}}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -749,11 +764,11 @@ return('\n\n'+o.join('\n\n')).slice(0,1800)};
 const RE_REM=/기억\s?해\s?(?:줘|주세요|둬|두세요|놔|라|봐|줄래|주라)|기억해\s*[.!~]*$|기억하세요|메모리에\s?(?:저장|추가)/;
 const RE_FOR=/잊어\s?(?:줘|주세요|버려|라|봐)|잊어\s*[.!~]*$|잊으세요|기억(?:에서)?\s?(?:지워|삭제)|메모리에서\s?(?:지워|삭제)|기억\s?삭제/;
 const RE_JUNK=/(^|\s)(줘|주세요|둬|놔|좀|꼭|이거|이건|이것도|그거|그건)(?=\s|[.!?~]|$)/g;
-window.agClean=()=>{for(const k in ATT){try{URL.revokeObjectURL(ATT[k].url)}catch(e){}}for(const k of ['c','x']){if(W[k]){try{W[k].terminate()}catch(e){}W[k]=null;W[k+'m']=null}}busy=false;wake(false);app.style.maxWidth='';window.agClean=null};
+window.agClean=()=>{for(const k in ATT){try{URL.revokeObjectURL(ATT[k].url)}catch(e){}}for(const k of ['c','x']){if(W[k]){try{W[k].terminate()}catch(e){}W[k]=null;W[k+'m']=null}}busy=false;wake(false);app.style.maxWidth='';app.style.padding='';app.style.removeProperty('--cw');window.agClean=null};
 const PF=(()=>{try{return JSON.parse(localStorage.getItem('lais_agent_prefs'))||{}}catch(e){return{}}})();
 const savePf=()=>{try{localStorage.setItem('lais_agent_prefs',JSON.stringify(PF))}catch(e){}};
 const PHK='lais_agent_photo';
-app.style.maxWidth=PF.wide?'1500px':'1100px';applyLook(PF);
+const fitApp=()=>{app.style.maxWidth='none';app.style.padding='0';app.style.setProperty('--cw',PF.wide?'980px':'760px')};fitApp();applyLook(PF);
 // ---------- 화면 ----------
 app.innerHTML=`<div class="ag"><aside class="as" id="as"><div class="lgo"><i>✳</i> Local AI Studio <small class="xp">실험</small></div><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="me"></button><button class="btn ghost" id="ho">← 처음으로</button></aside>
 <section class="am"><div class="top" style="margin-bottom:2px"><button class="btn ghost" id="mb" aria-label="채팅 목록">☰</button><select id="ms" title="대화 모델 바꾸기"></select><b id="ct" hidden></b><span class="grow"></span><button class="btn ghost" id="ic" title="시크릿 채팅"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V11a7 7 0 0114 0v10l-2.5-2-2.3 2-2.2-2-2.2 2-2.3-2z"/><circle cx="9.5" cy="11" r=".6" fill="currentColor"/><circle cx="14.5" cy="11" r=".6" fill="currentColor"/></svg></button></div>
@@ -808,7 +823,7 @@ sg.querySelectorAll('button').forEach(x=>x.onclick=()=>{PF.th=x.dataset.k;savePf
 const FN=[['','기본 (고딕)'],['serif','명조·세리프'],['mono','고정폭']];
 b.append(fld('화면 글꼴','',sel(FN,PF.fnt||'',v=>{PF.fnt=v;savePf();applyLook(PF)})));
 b.append(fld('답변 글꼴','',sel([['','화면 글꼴과 같게'],['serif','명조·세리프'],['mono','고정폭']],PF.rfnt||'',v=>{PF.rfnt=v;savePf();applyLook(PF)})));
-b.append(fld('채팅 너비','',sel([['','좁게'],['1','넓게']],PF.wide?'1':'',v=>{PF.wide=!!v;savePf();app.style.maxWidth=PF.wide?'1500px':'1100px'})))}
+b.append(fld('채팅 너비','',sel([['','좁게'],['1','넓게']],PF.wide?'1':'',v=>{PF.wide=!!v;savePf();fitApp()})))}
 function tabFn(b){secH(b,'기능');b.lastChild.style.marginTop='4px';
 b.append(tgRow('답변 옆 패널 자동 열기','웹 페이지·그림 코드가 나오면 오른쪽 패널을 바로 열어요',!PF.noart,v=>{PF.noart=!v;savePf()}));
 let row;row=fld('과부하 방지',PM_SUB[st.pm],sel(PM_NAME.map((n,i)=>[String(i),n]),String(st.pm),v=>{setPm(+v);row.querySelector('.sub').textContent=PM_SUB[+v]}));b.append(row)}
