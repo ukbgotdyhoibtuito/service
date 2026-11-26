@@ -273,6 +273,14 @@ dialog.mdl{width:min(94vw,900px);height:min(86vh,720px);border-radius:16px}
 .pmn button{display:flex;align-items:center;gap:12px;border:0;background:none;color:var(--tx);font:inherit;text-align:left;padding:9px 10px;border-radius:10px;cursor:pointer}.pmn button:hover{background:color-mix(in srgb,var(--tx) 9%,transparent)}.pmn button svg{flex:none;color:var(--sub)}
 .pmn button span{display:flex;flex-direction:column;min-width:0}.pmn button b{font-weight:600;font-size:14px}.pmn button small{color:var(--sub);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pmh{font-size:12px;color:var(--sub);padding:8px 10px 2px}
+/* ---- 디자인 다듬기 ---- */
+.am .m.a:has(.cb){width:100%}
+.am .m .cb{margin:10px 0;border:0;border-radius:12px;background:var(--sf,var(--card))}
+.am .m .cb .ch{border:0;padding:8px 12px 0;font-size:12.5px}
+.am .m .cb pre{background:none;border:0;margin:0;padding:6px 14px 12px}
+.mdl{border-radius:20px}.mdl .mh2{margin-top:22px}
+.fld input[type=text]{background:color-mix(in srgb,var(--tx) 7%,transparent);border-radius:10px}.fld input[type=text]:focus{outline:2px solid color-mix(in srgb,var(--ac) 50%,transparent)}
+.cta:focus{outline:2px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -825,7 +833,7 @@ const pickPhoto=()=>{const fi=document.createElement('input');fi.type='file';fi.
 try{const im=await imgOf(f0),c=document.createElement('canvas');c.width=c.height=128;const sz=Math.min(im.naturalWidth,im.naturalHeight);c.getContext('2d').drawImage(im,(im.naturalWidth-sz)/2,(im.naturalHeight-sz)/2,sz,sz,0,0,128,128);try{localStorage.setItem(PHK,c.toDataURL('image/jpeg',.85))}catch(e){}drawMe();draw()}catch(e){q('#mm').textContent='사진을 읽을 수 없어요'}};fi.click()};
 function tabGen(b){secH(b,'프로필');b.lastChild.style.marginTop='4px';
 const av=document.createElement('button');av.className='avb';av.innerHTML=avHtml(40);av.title='눌러서 사진 바꾸기';av.onclick=pickPhoto;b.append(fld('사진','눌러서 바꿔요. 정사각형으로 잘라 이 브라우저에만 저장해요',av));
-const nm=document.createElement('input');nm.type='text';nm.maxLength=20;nm.value=PF.name||'';nm.oninput=()=>{PF.name=nm.value;savePf();drawMe()};b.append(fld('호칭','대화에서 AI가 나를 부를 이름',nm));
+const nm=document.createElement('input');nm.type='text';nm.maxLength=20;nm.placeholder='예) 민수';nm.value=PF.name||'';nm.oninput=()=>{PF.name=nm.value;savePf();drawMe()};b.append(fld('호칭','대화에서 AI가 나를 부를 이름',nm));
 b.append(fld('하는 일','설명의 눈높이와 예시를 맞추는 데 참고해요',sel([['','선택 안 함'],...JOBS.map(x=>[x,x])],PF.job||'',v=>{PF.job=v;savePf()})))}
 function tabLook(b){secH(b,'화면');b.lastChild.style.marginTop='4px';
 const IC={'':'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',dark:'<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>'};
@@ -940,7 +948,7 @@ const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const inl=t=>t.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>');
 const cb=(lg,cd)=>{const pv=/^(html|htm|svg)$/.test(lg)||(!lg&&/^\s*(<!doctype html|<html)/i.test(cd)),ru=/^(js|javascript|node)$/.test(lg);
 return '<div class="cb"><div class="ch"><span>'+(lg||'코드')+'</span><span class="grow"></span>'+(ru?'<button data-a="run">▶ 실행</button>':'')+(pv?'<button data-a="pv">👁 미리보기</button>':'')+'<button data-a="cp">복사</button></div><pre><code>'+cd+'</code></pre></div>'};
-const md=x=>{x=esc(x);let o='',p=0,m;const re=/```([^\n]*)\n?([\s\S]*?)(?:```|$)/g;while((m=re.exec(x))&&m[0]){o+=inl(x.slice(p,m.index))+cb(m[1].trim().toLowerCase(),m[2].replace(/\n$/,''));p=m.index+m[0].length}return o+inl(x.slice(p))};
+const md=x=>{x=esc(x);let o='',p=0,m;const re=/```([^\n]*)\n?([\s\S]*?)(?:```|$)/g;while((m=re.exec(x))&&m[0]){o+=inl(x.slice(p,m.index).replace(/^\n+|\n+$/g,''))+cb(m[1].trim().toLowerCase(),m[2].replace(/\n$/,''));p=m.index+m[0].length}return o+inl(x.slice(p).replace(/^\n+/,''))};
 // ---------- 코드 실행·미리보기 (격리된 iframe: 저장소·네트워크 접근 불가, 실행은 워커에서 10초 제한) ----------
 const WSRC=`const out=[],fm=a=>a.map(x=>{if(typeof x==='string')return x;if(x===undefined)return'undefined';try{return JSON.stringify(x,(k,v)=>typeof v==='bigint'?v+'n':v,2)||String(x)}catch(e){return String(x)}}).join(' ');
 console.log=console.info=console.debug=(...a)=>{out.push(fm(a))};console.warn=console.error=(...a)=>{out.push('⚠ '+fm(a))};
