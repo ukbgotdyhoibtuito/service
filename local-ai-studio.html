@@ -266,6 +266,13 @@ dialog.mdl{width:min(94vw,900px);height:min(86vh,720px);border-radius:16px}
 .as .lgo{align-items:center}.as .lgo #ho{margin-left:auto;padding:6px;min-height:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex:none}
 .ib{background:none}.ib:hover{background:color-mix(in srgb,var(--tx) 10%,transparent)}
 @media(max-width:700px){.am{padding:8px 12px 12px}.artp{position:fixed;inset:0;width:auto;z-index:30;background:var(--bg);padding:12px}}
+/* + 메뉴, Think 버튼 */
+.am #pa{background:color-mix(in srgb,var(--tx) 9%,transparent)!important;border:0!important}
+.thk{display:flex;align-items:center;gap:6px;border:0;border-radius:99px;padding:7px 12px;font:inherit;font-size:14px;cursor:pointer;background:transparent;color:var(--sub);align-self:center;flex:none}.thk:hover{background:color-mix(in srgb,var(--tx) 8%,transparent);color:var(--tx)}.thk.on{background:color-mix(in srgb,var(--ac) 18%,transparent);color:var(--ac)}.thk[hidden]{display:none}
+.pmn{position:absolute;left:6px;bottom:calc(100% + 8px);width:280px;max-width:calc(100vw - 24px);max-height:60vh;overflow:auto;background:var(--bg);border-radius:16px;padding:6px;box-shadow:0 8px 30px rgba(0,0,0,.28),0 0 0 1px color-mix(in srgb,var(--tx) 10%,transparent);z-index:25;display:flex;flex-direction:column;gap:1px}
+.pmn button{display:flex;align-items:center;gap:12px;border:0;background:none;color:var(--tx);font:inherit;text-align:left;padding:9px 10px;border-radius:10px;cursor:pointer}.pmn button:hover{background:color-mix(in srgb,var(--tx) 9%,transparent)}.pmn button svg{flex:none;color:var(--sub)}
+.pmn button span{display:flex;flex-direction:column;min-width:0}.pmn button b{font-weight:600;font-size:14px}.pmn button small{color:var(--sub);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmh{font-size:12px;color:var(--sub);padding:8px 10px 2px}
 </style></head><body><div id="app"></div>
 <!-- 모델 실행 Worker (Blob으로 생성). 라이브러리를 프로젝트에 포함하려면 LIB 경로를 로컬 파일로 바꾸면 됨 -->
 <script type="text/plain" id="wk">
@@ -777,7 +784,7 @@ const fitApp=()=>{app.style.maxWidth='none';app.style.padding='0';app.style.setP
 app.innerHTML=`<div class="ag"><aside class="as" id="as"><div class="lgo"><i>✳</i> Local AI Studio <small class="xp">실험</small><button class="btn ghost" id="ho" title="처음으로" aria-label="처음으로"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button></div><button class="btn" id="nc">＋ 새 채팅</button><div class="cl" id="cl"></div><button class="btn ghost" id="me"></button></aside>
 <section class="am"><div class="top" style="margin-bottom:2px"><button class="btn ghost" id="mb" aria-label="채팅 목록">☰</button><select id="ms" title="대화 모델 바꾸기"></select><b id="ct" hidden></b><span class="grow"></span><button class="btn ghost" id="ic" title="시크릿 채팅"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V11a7 7 0 0114 0v10l-2.5-2-2.3 2-2.2-2-2.2 2-2.3-2z"/><circle cx="9.5" cy="11" r=".6" fill="currentColor"/><circle cx="14.5" cy="11" r=".6" fill="currentColor"/></svg></button></div>
 <div id="msgs"></div><div id="pe" class="row" style="flex-wrap:wrap;gap:6px"></div>
-<div class="comp"><button class="circ" id="pa" title="파일 첨부 (이미지·오디오·영상·텍스트·PDF)" style="background:var(--bg);color:var(--tx);border:1px solid var(--ln)">＋</button><textarea id="in" rows="1" placeholder="메시지를 입력하세요"></textarea><button class="circ" id="sd" title="전송">↑</button></div>
+<div class="comp"><button class="circ" id="pa" title="파일 첨부 (이미지·오디오·영상·텍스트·PDF)" style="background:var(--bg);color:var(--tx);border:1px solid var(--ln)">＋</button><textarea id="in" rows="1" placeholder="메시지를 입력하세요"></textarea><button class="thk" id="tk2" hidden title="생각하고 답하기 (켜면 더 정확하지만 느려요)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 8c-3 0-4 2-4 4s1 4 4 4"/></svg>Think</button><button class="circ" id="sd" title="전송">↑</button></div>
 <div class="disc">Local AI Studio의 AI도 실수할 수 있어요. 중요한 내용은 꼭 확인해 주세요.<br>모델 다운로드 외에는 모든 처리가 내 컴퓨터 안에서 이뤄져요.</div>
 <input type="file" id="fi" accept="image/*,audio/*,video/*,application/pdf,.pdf,text/*,.txt,.md,.csv,.tsv,.json,.srt,.vtt,.log,.js,.ts,.py,.html,.css,.xml,.yaml,.yml,.ini,.toml,.java,.c,.cpp,.h,.cs,.go,.rs,.sh,.sql,.kt,.swift,.php,.rb" multiple hidden></section></div>`;
 const box=$('#msgs'),sb=()=>{if(box.scrollHeight-box.scrollTop-box.clientHeight<90)box.scrollTop=1e9},put=(c,t)=>{const d=document.createElement('div');d.className=c;if(t!=null)d.textContent=t;box.append(d);sb();return d};
@@ -1006,7 +1013,7 @@ function renderChat(){box.innerHTML='';$('#ct').textContent=chat?chat.title:'새
 if(chat){ap.hidden=true;for(const m of chat.msgs){if(m.th)box.append(drawTk(m.th,m.ths));if(!m.h)addMsg(m)}addActs()}
 else{box.innerHTML='<div class="empty"><div class="lgo"><i>✳</i> Local AI Studio</div><h2>무엇을 도와드릴까요?</h2>'+(inc()?'<div class="sub" style="margin:-8px 0 14px">👻 시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요</div>':'')+'</div>';
 box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#in').value=b.textContent.replace(/ \(.*\)$/,'');$('#in').focus();$('#in').oninput({target:$('#in')})})}
-box.scrollTop=1e9;drawList();drawModels();drawInc()}
+box.scrollTop=1e9;drawList();drawModels();drawInc();drawThink()}
 function drawInc(){const b=$('#ic');b.classList.toggle('on',inc());b.style.opacity=inc()?1:.5;b.disabled=!!(chat&&chat.msgs.length);b.title=inc()?'시크릿 채팅 — 메모리를 쓰지 않고, 새로고침하면 대화가 사라져요':'시크릿 채팅으로 시작 (새 채팅에서만 켤 수 있어요)'}
 function drawList(){const l=$('#cl');l.innerHTML='';for(const c of S.chats){const r=document.createElement('div');r.className='ci'+(chat&&c.id===chat.id?' on':'');
 const s=document.createElement('span');s.textContent=(c.inc?'👻 ':'')+c.title;const x=document.createElement('button');x.textContent='✕';x.title='삭제';
@@ -1015,6 +1022,8 @@ r.onclick=()=>{if(busy)return;chat=c;S.cur=c.id;save();renderChat();$('#as').cla
 $('#ic').onclick=()=>{if(busy||(chat&&chat.msgs.length))return;if(chat)chat.inc=!chat.inc;else incNext=!incNext;renderChat()};
 $('#nc').onclick=()=>{if(busy)return;chat=null;S.cur=null;incNext=false;renderChat();$('#as').classList.remove('on');$('#in').focus()};
 // ---------- 모델 ----------
+let think=false;const canThink=m=>!!m&&/^qwen/.test(m.id);
+const drawThink=()=>{const b=$('#tk2');if(!b)return;const ok=canThink(chatModel());b.hidden=!ok;b.classList.toggle('on',ok&&think)};
 const chatModel=()=>{const id=(chat&&chat.model)||S.model;return MODELS.find(m=>m.id===id&&m.kind==='chat')||null};
 async function drawModels(){const sel=$('#ms'),urls=await cacheUrls(),cur=chatModel(),rows=[];
 for(const m of MODELS.filter(x=>x.kind==='chat'))rows.push({m,c:await cached(m,urls),f:fit(m)});
@@ -1199,7 +1208,7 @@ const llm=(w,m,el,sys)=>new Promise((res,rej)=>{let acc='',rq=0,tk=null,t0=0;con
 if(th){if(!tk){tk=drawTk(th,0,1);el.before(tk)}else tk.lastChild.textContent=th;tk.lastChild.scrollTop=1e9}el.style.display=th&&!c?'none':'';
 if(c.includes('<tool>'))el.textContent='🔧 도구를 고르는 중…';else if(c)el.innerHTML=md(c);else el.textContent='생각 중…';sb()};
 w.onmessage=({data:d})=>{if(d.type==='tok'){if(!t0)t0=Date.now();acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);const th=thOf(acc),sec=t0?Math.max(1,Math.round((Date.now()-t0)/1000)):0;lastTh={th:th.slice(0,4000),sec};if(th){if(!tk){tk=drawTk(th,sec);el.before(tk)}tk.open=false;tk.firstChild.textContent='생각 '+sec+'초'}el.style.display='';res(clean(acc))}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
-w.postMessage({type:'chat',noThink:m.noThink,max:st.maxUser?st.max:autoMax(m),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:sys||sysBase()},...shot(),...history()]})});
+w.postMessage({type:'chat',noThink:canThink(m)?!think:m.noThink,max:(st.maxUser?st.max:autoMax(m))*(think&&canThink(m)?2:1),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:sys||sysBase()},...shot(),...history()]})});
 // ---------- 대화 진행 ----------
 const toEn=(w,m,t)=>new Promise(res=>{let acc='';w.onmessage=({data:d})=>{if(d.type==='tok')acc+=d.t;else if(d.type==='done')res(clean(acc).replace(/^["'`]+|["'`]+$/g,'').trim());else if(d.type==='err')res('')};
 w.postMessage({type:'chat',noThink:true,max:100,gap:0,messages:[{role:'system',content:'Turn the user\'s request into one short English prompt for an image generator, describing only the picture to draw. Output only the prompt.'},{role:'user',content:t}]})});
@@ -1272,7 +1281,21 @@ o+=`[문서 발췌 #${a.n} ${a.name} — 질문과 관련된 부분]\n${ls.join(
 return o+'(발췌가 부족하면 search_doc으로 더 찾거나 read_file로 이어서 읽으세요)'}
 const txl=()=>((chatModel()||{}).ctx||4096)>=8192?3000:1500; // 작은 모델은 컨텍스트가 좁아 파일 내용을 덜 넣음
 const addFiles=fs=>{for(const f of fs){const ty=typeOf(f);if(ty==='text'&&f.size>2e6)put('tl','텍스트 파일이 너무 커요 (2MB 이하만 가능): '+f.name);else if(ty==='doc'&&f.size>3e7)put('tl','PDF가 너무 커요 (30MB 이하만 가능): '+f.name);else if(ty)pend.push({blob:f,name:f.name||('pasted-'+Date.now()+'.png'),type:ty});else put('tl','지원하지 않는 파일이에요: '+f.name)}drawPend()};
-$('#pa').onclick=()=>$('#fi').click();$('#fi').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+$('#tk2').onclick=()=>{think=!think;drawThink()};$('#ms').addEventListener('change',()=>setTimeout(drawThink,0));
+const PI={fl:'<path d="M21 12l-8.5 8.5a5 5 0 01-7-7L14 5a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L15 8"/>',im:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.6"/><path d="M21 15l-5-5L5 21"/>',cd:'<path d="M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/>',sc:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/>',sb:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 11h4M13 11h4M7 15h2M11 15h6"/>',ex:'<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',bt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'};
+const putIn=t=>{const i=$('#in');i.value=t;i.focus();i.oninput({target:i});i.setSelectionRange(t.length,t.length)};
+const pickThen=(acc,t)=>{const f=document.createElement('input');f.type='file';f.accept=acc;f.onchange=()=>{if(f.files[0]){addFiles([f.files[0]]);putIn(t)}};f.click()};
+const closePm=()=>{const m=$('#pmn');if(m)m.remove();document.removeEventListener('pointerdown',pmOut,true)};
+const pmOut=e=>{const m=$('#pmn');if(m&&!m.contains(e.target)&&e.target.closest('#pa')===null)closePm()};
+$('#pa').onclick=()=>{if($('#pmn')){closePm();return}
+const it=[['fl','파일 추가','사진·문서·오디오·영상',()=>$('#fi').click()],['im','이미지 만들기','글로 설명하면 그려 줘요',()=>putIn('이미지로 그려줘: ')],['cd','웹페이지·앱 만들기','옆 패널에서 바로 미리보기',()=>putIn('웹페이지로 만들어줘: ')],['sc','배경 지우기','사진을 올리면 투명 배경으로',()=>pickThen('image/*','이 사진 배경 지워줘')],['ex','사진 확대','더 크고 선명하게',()=>pickThen('image/*','이 사진 크게 확대해줘')],['sb','자막 만들기','오디오·영상에서 받아쓰기',()=>pickThen('audio/*,video/*','이 파일 받아쓰기 해줘')]];
+const sk=skOn();const m=document.createElement('div');m.id='pmn';m.className='pmn';
+const row=(ic,t,d,fn)=>{const b=document.createElement('button');b.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+PI[ic]+'</svg><span><b></b><small></small></span>';b.querySelector('b').textContent=t;b.querySelector('small').textContent=d||'';b.onclick=()=>{closePm();fn()};m.append(b)};
+for(const [ic,t,d,fn] of it)row(ic,t,d,fn);
+if(sk.length){const h=document.createElement('div');h.className='pmh';h.textContent='스킬';m.append(h);for(const k of sk)row('bt',k.name,k.desc,()=>putIn(`"${k.name}" 스킬로 `))}
+$('.comp').append(m);setTimeout(()=>document.addEventListener('pointerdown',pmOut,true),0)};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePm()});
+$('#fi').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
 const am=$('.am');am.ondragover=e=>e.preventDefault();am.ondrop=e=>{e.preventDefault();addFiles([...e.dataTransfer.files])};
 $('#in').onpaste=e=>{const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();addFiles(fs)}};
 $('#sd').onclick=send;
