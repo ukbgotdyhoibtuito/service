@@ -232,7 +232,55 @@
     }
     .category.device { background: #eaf4ff; color: #3973a9; }
     .category.life { background: #eaf6ef; color: #3e8561; }
-    .category.other { background: #f0f1f2; color: #666b70; }
+
+    .filter-separator {
+      align-self: center;
+      width: 1px;
+      height: 18px;
+      flex: 0 0 1px;
+      margin: 0 1px 7px;
+      background: #d9dbd8;
+    }
+    .filter.filter-dai {
+      position: relative;
+      isolation: isolate;
+      background: linear-gradient(120deg, #21D67A 0%, #3B9EFF 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      border-bottom-color: transparent;
+    }
+    .filter.filter-dai::before {
+      content: "D-AI";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      font: inherit;
+      letter-spacing: inherit;
+      background: linear-gradient(120deg, #21D67A 0%, #3B9EFF 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      filter: blur(7px);
+      opacity: .78;
+      pointer-events: none;
+    }
+    .filter.filter-dai::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 2px;
+      background: linear-gradient(90deg, #21D67A 0%, #3B9EFF 100%);
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+    .filter.filter-dai:hover::after,
+    .filter.filter-dai[aria-pressed="true"]::after { opacity: 1; }
+
     .card-title {
       margin: 0;
       font-size: 17px;
@@ -326,7 +374,8 @@
         <button class="filter" type="button" data-filter="ai" aria-pressed="false">AI</button>
         <button class="filter" type="button" data-filter="device" aria-pressed="false">기기 도구</button>
         <button class="filter" type="button" data-filter="life" aria-pressed="false">라이프</button>
-        <button class="filter" type="button" data-filter="other" aria-pressed="false">기타</button>
+        <span class="filter-separator" aria-hidden="true"></span>
+        <button class="filter filter-dai" type="button" data-filter="dai" aria-pressed="false">D-AI</button>
               </div>
       <label class="search-wrap">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -337,7 +386,7 @@
     </section>
 
     <div class="results-line">
-      <span id="result-count" aria-live="polite">10개 서비스</span>
+      <span id="result-count" aria-live="polite">13개 서비스</span>
     </div>
 
     <section class="grid" id="service-grid" aria-label="서비스 목록">
@@ -383,16 +432,58 @@
         </a>
       </article>
 
-      <article class="service-card" data-category="ai" data-search="d-ai dai daily ai 디스코드 봇 멘션 ai 채팅 캐릭터 챗">
+      <article class="service-card" data-category="dai" data-search="d-ai dai daily ai 디스코드 봇 멘션 검색 시간 조회 대화 기억">
         <a class="card-link" href="https://d-ai.dutkyobot.r-e.kr/">
           <div class="preview">
-            <img src="./og/dai.png" alt="D-AI 미리보기" loading="lazy" decoding="async">
+            <img src="./og/dai-discord.png" alt="D-AI 디스코드 봇 소개 미리보기" loading="lazy" decoding="async">
             <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
           </div>
           <div class="card-content">
-            <div class="card-top"><span class="category">AI</span></div>
-            <h2 class="card-title">D-AI</h2>
-            <p class="card-description">디스코드 멘션으로 호출하고 검색·시간 조회까지 활용하는 AI 봇.</p>
+            <div class="card-top"><span class="category">D-AI</span></div>
+            <h2 class="card-title">디스코드 봇</h2>
+            <p class="card-description">디스코드에서 멘션 한 번으로 호출하는 AI 봇. 검색·시간 조회와 대화 기억을 지원해요.</p>
+          </div>
+        </a>
+      </article>
+
+      <article class="service-card" data-category="dai" data-search="d-ai web 일반 ai 채팅 gemini 이미지 pdf 웹 검색 코드 캔버스">
+        <a class="card-link" href="https://d-ai.dutkyobot.r-e.kr/chat.html">
+          <div class="preview">
+            <img src="./og/dai-web.png" alt="D-AI Web 채팅 미리보기" loading="lazy" decoding="async">
+            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </div>
+          <div class="card-content">
+            <div class="card-top"><span class="category">D-AI</span></div>
+            <h2 class="card-title">D-AI Web</h2>
+            <p class="card-description">내 Gemini API 키로 사용하는 AI 채팅. 이미지·PDF 첨부와 웹 검색, 코드 미리보기를 지원해요.</p>
+          </div>
+        </a>
+      </article>
+
+      <article class="service-card" data-category="dai" data-search="d-ai character 캐릭터 챗 세계관 단체 채팅 1대1 대화">
+        <a class="card-link" href="https://d-ai.dutkyobot.r-e.kr/character.html">
+          <div class="preview">
+            <img src="./og/dai-character.png" alt="D-AI 캐릭터 챗 미리보기" loading="lazy" decoding="async">
+            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </div>
+          <div class="card-content">
+            <div class="card-top"><span class="category">D-AI</span></div>
+            <h2 class="card-title">캐릭터 챗</h2>
+            <p class="card-description">나만의 캐릭터와 1:1 대화하거나, 세계관별 AI 단체 채팅을 즐겨보세요.</p>
+          </div>
+        </a>
+      </article>
+
+      <article class="service-card" data-category="dai" data-search="d-ai 3d blueprint 입체도형 사진 분석 3d 모형 꼭짓점 좌표 겉넓이 부피">
+        <a class="card-link" href="https://d-ai.dutkyobot.r-e.kr/clickto3d.html">
+          <div class="preview">
+            <img src="./og/dai-3d-blueprint.png" alt="D-AI 3D Blueprint 미리보기" loading="lazy" decoding="async">
+            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </div>
+          <div class="card-content">
+            <div class="card-top"><span class="category">D-AI</span></div>
+            <h2 class="card-title">3D Blueprint</h2>
+            <p class="card-description">입체도형 사진을 분석해 회전 가능한 3D 모형과 학습 정보를 만들어요.</p>
           </div>
         </a>
       </article>
@@ -453,21 +544,7 @@
         </a>
       </article>
 
-      <article class="service-card" data-category="other" data-search="quickmod 퀵모드"> 
-        <a class="card-link" href="https://quickmod.dutkyobot.r-e.kr/">
-          <div class="preview">
-            <img src="./og/quickmod.png" alt="QuickMod 미리보기" loading="lazy" decoding="async">
-            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
-          </div>
-          <div class="card-content">
-            <div class="card-top"><span class="category other">기타</span></div>
-            <h2 class="card-title">QuickMod</h2>
-            <p class="card-description">QuickMod 서비스 페이지를 바로 열어보세요.</p>
-          </div>
-        </a>
-      </article>
-
-      <article class="service-card" data-category="life" data-search="tracklist 트랙리스트 유튜브 음악 플레이리스트 재생">
+<article class="service-card" data-category="life" data-search="tracklist 트랙리스트 유튜브 음악 플레이리스트 재생">
         <a class="card-link" href="./tracklist.html">
           <div class="preview">
             <img src="./og/tracklist.png" alt="트랙리스트 미리보기" loading="lazy" decoding="async">
@@ -480,6 +557,21 @@
           </div>
         </a>
       </article>
+
+      <article class="service-card" data-category="uncategorized" data-search="quickmod 퀵모드">
+        <a class="card-link" href="https://quickmod.dutkyobot.r-e.kr/">
+          <div class="preview">
+            <img src="./og/quickmod.png" alt="QuickMod 미리보기" loading="lazy" decoding="async">
+            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </div>
+          <div class="card-content">
+            <div class="card-top"><span class="category">QuickMod</span></div>
+            <h2 class="card-title">QuickMod</h2>
+            <p class="card-description">QuickMod 서비스 페이지를 바로 열어보세요.</p>
+          </div>
+        </a>
+      </article>
+
     </section>
 
     <div class="empty-state" id="empty-state" hidden>
