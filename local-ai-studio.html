@@ -897,7 +897,17 @@ q('#mi').placeholder=f?'이 파일에 추가하거나 지울 내용을 알려 �
 if(f){const h=document.createElement('div');h.className='md';h.innerHTML='<h2></h2><div class="sub" style="margin-top:16px">마지막 업데이트</div><div class="v1"></div><div class="sub" style="margin-top:16px">요약</div><div class="v2"></div><div class="sub" style="margin-top:16px">세부 정보</div><ul></ul>';
 h.querySelector('h2').textContent=f.name;if(f.sec==='area'){const rn=document.createElement('button');rn.className='btn ghost';rn.textContent='이름 바꾸기';rn.style.cssText='padding:2px 10px;min-height:0;font-size:12px;margin-top:6px';rn.onclick=()=>{const v=(prompt('주제 이름',f.name)||'').replace(/\s+/g,' ').trim().slice(0,20);if(!v||v===f.name)return;if(M.files.some(x=>x!==f&&x.sec==='area'&&x.name===v)){alert('같은 이름의 주제가 이미 있어요');return}f.name=v;f.at=Date.now();mSave();draw()};h.querySelector('h2').after(rn)}h.querySelector('.v1').textContent=new Date(f.at).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});h.querySelector('.v2').textContent=mSum(f);
 const ul=h.querySelector('ul');for(const d of f.det){const li=document.createElement('li'),sp=document.createElement('span'),x=document.createElement('button');sp.textContent=d.t;x.textContent='✕';x.title='삭제';
-x.onclick=()=>{f.det=f.det.filter(y=>y!==d);if(!f.det.length){M.files=M.files.filter(y=>y!==f);cur=null}else f.at=Date.now();mSave();draw()};li.append(sp,x);ul.append(li)}body.append(h);return}
+x.onclick=()=>{f.det=f.det.filter(y=>y!==d);if(!f.det.length){M.files=M.files.filter(y=>y!==f);cur=null}else f.at=Date.now();mSave();draw()};li.append(sp,x);ul.append(li)}body.append(h);
+const eb=document.createElement('div');eb.style.marginTop='16px';const mdOf=()=>`---\nname: ${f.name}\ndescription: ${mSum(f)}\n---\n\n${f.det.map(d=>'- '+d.t).join('\n')}\n`;
+const showBtn=()=>{eb.innerHTML='';eb.append(pbtn('마크다운으로 편집',showEd))};
+const showEd=()=>{eb.innerHTML='';const ta=document.createElement('textarea');ta.className='cta';ta.rows=12;ta.spellcheck=false;ta.style.cssText+=';font:13px/1.6 ui-monospace,Menlo,Consolas,monospace';ta.value=mdOf();eb.append(ta);
+const r=document.createElement('div');r.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:8px';
+r.append(pbtn('취소',showBtn),pbtn('저장',()=>{const t=ta.value.replace(/\r\n?/g,'\n'),m=t.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n([\s\S]*))?$/),body2=m?(m[2]||''):t,nm=m&&(m[1].match(/^name:[ \t]*(.*)$/m)||[])[1];
+const lines=body2.split('\n').map(x=>x.match(/^\s*[-*]\s+(.+?)\s*$/)).filter(Boolean).map(x=>x[1].slice(0,200)).slice(0,60);
+if(!lines.length){q('#mm').textContent='"- 내용" 형식의 줄이 하나 이상 필요해요 (모두 지우려면 파일을 삭제하세요)';return}
+if(f.sec==='area'&&nm){const v=nm.trim().replace(/^(["'])([\s\S]*)\1$/,'$2').replace(/\s+/g,' ').slice(0,20);if(v&&v!==f.name){if(M.files.some(x=>x!==f&&x.sec==='area'&&x.name===v)){q('#mm').textContent='같은 이름의 주제가 이미 있어요';return}f.name=v}}
+const old=new Map(f.det.map(d=>[d.t,d]));f.det=lines.map(l=>old.get(l)||{id:uid(),t:l,at:Date.now(),src:'user'});f.at=Date.now();mSave();draw()}));eb.append(r)};
+showBtn();body.append(eb);return}
 const TB={sk:tabSk,gen:tabGen,look:tabLook,fn:tabFn,noti:tabNoti,dat:tabDat,ins:tabIns};if(tab!=='ins'||!memView){TB[tab](body);return}
 const o=document.createElement('div');o.className='sub';o.style.margin='4px 0 12px';o.textContent='AI가 기억한 내용이에요. 항목을 눌러 보고 ✕로 지울 수 있어요. 아래 입력칸에 바꿀 내용을 말로 적으면 AI가 고쳐요. (대화 모델이 켜져 있을 때)';body.append(o);
 for(const [sec,lab] of [['me','나'],['area','영역']]){const fs=M.files.filter(x=>x.sec===sec).sort((a,b)=>(sec==='me'?(a.key==='profile'?-1:b.key==='profile'?1:0):0)||a.name.localeCompare(b.name));if(!fs.length)continue;
