@@ -854,19 +854,20 @@ function tabFn(b){secH(b,'기능');b.lastChild.style.marginTop='4px';
 b.append(tgRow('답변 옆 패널 자동 열기','웹 페이지·그림 코드가 나오면 오른쪽 패널을 바로 열어요',!PF.noart,v=>{PF.noart=!v;savePf()}));
 let row;row=fld('과부하 방지',PM_SUB[st.pm],sel(PM_NAME.map((n,i)=>[String(i),n]),String(st.pm),v=>{setPm(+v);row.querySelector('.sub').textContent=PM_SUB[+v]}));b.append(row)}
 function tabSk(b){secH(b,'스킬');b.lastChild.style.marginTop='4px';
-const sd=document.createElement('div');sd.className='sub';sd.textContent='자주 쓰는 작업 방식을 이름·설명·지침으로 저장해 두면, 요청이 맞을 때 AI가 알아서 불러와 따라요. 이 브라우저에만 저장돼요.';b.append(sd);
+const sd=document.createElement('div');sd.className='sub';sd.textContent='클로드와 같은 SKILL.md 형식(맨 위 --- 사이에 name·description, 아래는 마크다운 지침)이에요. AI는 이름·설명만 항상 보고, 맞는 요청일 때만 지침 전체를 읽어요. 이 브라우저에만 저장돼요.';b.append(sd);
+const dl=(k)=>{const u=URL.createObjectURL(new Blob([skMd(k)],{type:'text/markdown;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download='SKILL.md';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)};
 if(skEd){const k=skEd==='new'?{name:'',desc:'',ins:'',on:true}:SK.find(x=>x.id===skEd)||{name:'',desc:'',ins:'',on:true};
-const nm=document.createElement('input');nm.type='text';nm.maxLength=30;nm.value=k.name;nm.placeholder='예) 회의록 정리';b.append(fld('이름','',nm));
-const ds=document.createElement('input');ds.type='text';ds.maxLength=100;ds.value=k.desc||'';ds.placeholder='언제 쓰는지 한 줄';b.append(fld('설명','AI가 이 설명을 보고 쓸지 정해요',ds));
-const ta=document.createElement('textarea');ta.className='cta';ta.rows=8;ta.maxLength=2000;ta.value=k.ins;ta.placeholder='AI가 따를 단계·형식·주의할 점을 적어요.\n예) 1. 결정 사항 2. 할 일(담당·기한) 3. 남은 질문 순서로, 짧은 문장으로 정리해.';b.append(ta);
+const ta=document.createElement('textarea');ta.className='cta';ta.rows=16;ta.maxLength=6000;ta.spellcheck=false;ta.style.cssText+=';font:13px/1.6 ui-monospace,Menlo,Consolas,monospace';
+ta.value=k.name?skMd(k):'---\nname: 회의록 정리\ndescription: 회의 내용을 붙여 넣으면 결정 사항과 할 일로 정리할 때 사용\n---\n\n# 회의록 정리\n\n1. 결정 사항\n2. 할 일 (담당·기한이 있으면 함께)\n3. 남은 질문\n\n내용에 없는 담당자나 기한은 지어내지 마세요.\n';b.append(ta);
 const r=document.createElement('div');r.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:8px';
-r.append(pbtn('취소',()=>{skEd=null;draw()}),pbtn('저장',()=>{const n=nm.value.trim(),i=ta.value.trim();if(!n||!i){q('#mm').textContent='이름과 지침을 적어 주세요';return}
-if(skEd==='new')SK.push({id:uid(),name:n,desc:ds.value.trim(),ins:i,on:true});else{k.name=n;k.desc=ds.value.trim();k.ins=i}skSave();skEd=null;draw()}));b.append(r);return}
-if(!SK.length)b.append(fld('아직 스킬이 없어요','예: 회의 내용을 붙여 넣으면 결정 사항·할 일로 정리',pbtn('예시 넣기',()=>{SK.push({id:uid(),name:'회의록 정리',desc:'회의 내용을 붙여 넣으면 결정 사항과 할 일로 정리할 때',ins:'아래 순서로 짧은 문장으로 정리하세요.\n1. 결정 사항\n2. 할 일 (담당·기한이 있으면 함께)\n3. 남은 질문\n내용에 없는 담당자나 기한은 지어내지 마세요.',on:true});skSave();draw()})));
+r.append(pbtn('취소',()=>{skEd=null;draw()}),pbtn('SKILL.md 받기',()=>{const v=skParse(ta.value);if(v.name)dl(v)}),pbtn('저장',()=>{const v=skParse(ta.value);if(!v.name||!v.ins){q('#mm').textContent='맨 위 name: 과 아래 지침 내용이 필요해요';return}
+if(skEd==='new')SK.push({id:uid(),...v,on:true});else Object.assign(k,v);skSave();skEd=null;draw()}));b.append(r);return}
+if(!SK.length)b.append(fld('아직 스킬이 없어요','직접 쓰거나 SKILL.md 파일을 가져올 수 있어요',pbtn('예시 넣기',()=>{SK.push({id:uid(),name:'회의록 정리',desc:'회의 내용을 붙여 넣으면 결정 사항과 할 일로 정리할 때 사용',ins:'1. 결정 사항\n2. 할 일 (담당·기한이 있으면 함께)\n3. 남은 질문\n\n내용에 없는 담당자나 기한은 지어내지 마세요.',on:true});skSave();draw()})));
 for(const k of SK){const w=document.createElement('div');w.style.cssText='display:flex;align-items:center;gap:8px';
 const t=document.createElement('span');t.className='tg';t.innerHTML='<input type="checkbox"><i></i>';const c=t.firstChild;c.checked=k.on!==false;c.onchange=()=>{k.on=c.checked;skSave()};
 w.append(pbtn('편집',()=>{skEd=k.id;draw()}),pbtn('삭제',()=>{if(confirm(`"${k.name}" 스킬을 삭제할까요?`)){SK=SK.filter(x=>x!==k);skSave();draw()}},'del'),t);b.append(fld(k.name,k.desc||'',w))}
-const ad=document.createElement('div');ad.style.cssText='display:flex;justify-content:flex-end;margin-top:12px';ad.append(pbtn('+ 스킬 추가',()=>{skEd='new';draw()}));b.append(ad)}
+const ad=document.createElement('div');ad.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:12px';
+ad.append(pbtn('SKILL.md 가져오기',()=>{const f=document.createElement('input');f.type='file';f.accept='.md,.markdown,.txt,text/markdown,text/plain';f.multiple=true;f.onchange=async()=>{let n=0;for(const x of [...f.files].slice(0,10)){if(x.size>2e5)continue;const v=skParse(await x.text());if(v.name&&v.ins){SK.push({id:uid(),...v,on:true});n++}}skSave();q('#mm').textContent=n?`${n}개를 가져왔어요`:'가져올 수 있는 SKILL.md가 없었어요';draw()};f.click()}),pbtn('+ 스킬 추가',()=>{skEd='new';draw()}));b.append(ad)}
 function tabNoti(b){secH(b,'알림');b.lastChild.style.marginTop='4px';
 b.append(tgRow('작업 완료 알림','다른 탭을 보는 중에 답변·이미지·자막 작업이 끝나면 알려 줘요',PF.noti,async(v,c)=>{if(!v){PF.noti=false;savePf();return}
 if(!window.Notification){c.checked=false;return}const r=Notification.permission==='granted'?'granted':await Notification.requestPermission();if(r==='granted'){PF.noti=true;savePf()}else c.checked=false}))}
@@ -1186,9 +1187,14 @@ const MEMT=['remember','forget','memory_update'],SAFE=['use_skill','calc','run_j
 const STY={'':['기본',''],short:['간결','핵심만 짧게, 군더더기 없이 답하세요.'],long:['자세히','근거와 예시를 곁들여 차근차근 자세히 설명하세요.'],friendly:['친근','친구에게 말하듯 따뜻하고 편안한 말투로 답하세요.'],pro:['전문적','격식 있고 정확한 전문가 어조로, 구조적으로 답하세요.']};
 const JOBS=['학생','개발자','디자이너','작가·창작','연구·교육','사무·기획','자영업','기타'];
 const SKK='lais_skills_v1';let SK=[];try{SK=JSON.parse(localStorage.getItem(SKK)||'[]')}catch(e){SK=[]}if(!Array.isArray(SK))SK=[];
+const skMd=k=>`---\nname: ${k.name}\ndescription: ${k.desc||''}\n---\n\n${k.ins}\n`;
+const skParse=t=>{t=String(t||'').replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');const m=t.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n([\s\S]*))?$/);let fm='',body=t;if(m){fm=m[1];body=m[2]||''}
+const g=k=>{const r=fm.match(new RegExp('^'+k+':[ \\t]*(.*)$','m'));return r?r[1].trim().replace(/^(["'])([\s\S]*)\1$/,'$2'):''};
+let name=g('name'),desc=g('description');body=body.trim();if(!name){const h=body.match(/^#\s+(.+)$/m);name=h?h[1].trim():''}
+return{name:name.slice(0,64),desc:desc.slice(0,1024),ins:body.slice(0,4000)}};
 const skSave=()=>{try{localStorage.setItem(SKK,JSON.stringify(SK))}catch(e){}};
 const skOn=()=>SK.filter(x=>x&&x.on!==false&&x.name&&x.ins);
-const skBlock=()=>{const l=skOn();return l.length?'\n[스킬] 사용자가 만든 재사용 지침입니다. 요청이 아래 설명과 맞을 때만 use_skill로 이름을 불러 지침을 읽고 그대로 따르세요. 맞지 않으면 쓰지 마세요.\n'+l.map(x=>`- ${x.name}: ${x.desc||''}`).join('\n'):''};
+const skBlock=()=>{const l=skOn();return l.length?'\n[스킬] 사용자가 만든 재사용 지침입니다. 요청이 아래 설명과 맞을 때만 use_skill로 이름을 불러 지침을 읽고 그대로 따르세요. 맞지 않으면 쓰지 마세요.\n'+l.map(x=>`- ${x.name}: ${String(x.desc||'').slice(0,120)}`).join('\n'):''};
 const prefBlock=()=>{const l=[];if((PF.name||'').trim())l.push('사용자 호칭: '+PF.name.trim().slice(0,20)+' (가끔 자연스럽게 이 이름으로 부르세요)');if(PF.job)l.push('사용자가 하는 일: '+PF.job);if(PF.st&&STY[PF.st]&&STY[PF.st][1])l.push('말투·스타일: '+STY[PF.st][1]);if((PF.ins||'').trim())l.push('사용자 지침: '+PF.ins.trim().slice(0,800));
 return l.length?'\n[사용자 설정] 사용자가 직접 정한 응답 방식입니다. 정확성·안전 원칙과 충돌하지 않는 범위에서 따르세요.\n'+l.join('\n'):''};
 const sysBase=()=>`당신은 Local AI Studio의 에이전트입니다. 사용자 컴퓨터(브라우저) 안에서 돌아가며, 아래 도구를 직접 쓸 수 있습니다.
