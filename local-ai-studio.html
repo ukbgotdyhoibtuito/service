@@ -673,8 +673,8 @@ r.querySelector('.fn').textContent=f.split('/').pop();$('#fl').append(r)}
 const fs=r.querySelector('.fs'),i=r.querySelector('i');
 if(p.status==='progress'&&p.total){const pc=Math.floor(p.loaded/p.total*100);i.style.width=pc+'%';fs.textContent=`${pc}% · ${(p.loaded/2**20).toFixed(1)}/${(p.total/2**20).toFixed(1)}MB`;r.classList.remove('dn')}
 else if(p.status==='done'){i.style.width='100%';fs.textContent='완료';r.classList.add('dn')}}
-function errText(m){m=String(m||'');
-if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(st.pm===2?'':' ‘과부하 방지’를 ‘균형’ 또는 ‘안정 우선’으로 바꾸면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
+function errText(m){m=String(m||'');if(m.includes('(상세:'))return m;
+if(/device.*lost|OrtRun|mapAsync|out of memory|OOM|allocation|createBuffer|Failed to allocate/i.test(m))return 'GPU 메모리나 처리 한도를 넘어 GPU 연결이 끊겼습니다. 더 작은 모델을 고르거나, 다른 탭·프로그램을 닫은 뒤 모델을 다시 불러오세요.'+(typeof think!=='undefined'&&think?' Think를 끄면 줄어들 수 있어요.':'')+(st.pm===2?'':' ‘과부하 방지’를 ‘균형’ 또는 ‘안정 우선’으로 바꾸면 줄어들 수 있어요.')+'\n(상세: '+m.slice(0,160)+')';
 if(/WebGPU|adapter|navigator\.gpu/i.test(m))return 'WebGPU를 사용할 수 없습니다. 최신 Chrome/Edge 데스크톱에서 열어 주세요.\n(상세: '+m.slice(0,160)+')';
 return m}
 function fail(msg){msg=errText(msg);killWorker();app.innerHTML=`<div class="card"><b>오류</b><p class="sub">${msg.replace(/</g,'&lt;')}</p><button class="btn" id="bk">모델 선택으로</button></div>`;$('#bk').onclick=()=>pick(st.kind)}
@@ -1234,7 +1234,7 @@ const llm=(w,m,el,sys)=>new Promise((res,rej)=>{const tm=think&&canThink(m);let 
 if(th){if(!tk){tk=drawTk(th,0,1);el.before(tk)}else tk.lastChild.textContent=th;tk.lastChild.scrollTop=1e9}el.style.display=th&&!c?'none':'';
 if(c.includes('<tool>'))el.textContent='🔧 도구를 고르는 중…';else if(c)el.innerHTML=md(c);else el.textContent='생각 중…';sb()};
 w.onmessage=({data:d})=>{if(d.type==='tok'){if(!t0)t0=Date.now();acc+=d.t;if(!rq)rq=requestAnimationFrame(paint)}else if(d.type==='done'){cancelAnimationFrame(rq);if(tm&&!acc.includes('</think>')&&!m.cls&&acc.indexOf('<think>',7)<0){acc=acc.slice(7);if(tk){tk.remove();tk=null}}const th=thOf(acc),sec=t0?Math.max(1,Math.round((Date.now()-t0)/1000)):0;lastTh={th:th.slice(0,4000),sec};if(th){if(!tk){tk=drawTk(th,sec);el.before(tk)}tk.open=false;tk.firstChild.textContent='생각 '+sec+'초'}el.style.display='';const c0=clean(acc);if(tm&&!c0){const N='생각이 길어져서 답을 쓰기 전에 멈췄어요. Think를 끄거나 질문을 나눠서 다시 시도해 보세요.';el.textContent=N;res(N)}else res(c0)}else if(d.type==='err'){cancelAnimationFrame(rq);rej(new Error(errText(d.msg)))}};
-w.postMessage({type:'chat',noThink:canThink(m)?!think:m.noThink,max:(st.maxUser?st.max:autoMax(m))*(think&&canThink(m)?2:1),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:sys||sysBase()},...shot(),...history()]})});
+w.postMessage({type:'chat',noThink:canThink(m)?!think:m.noThink,max:(()=>{const n=st.maxUser?st.max:autoMax(m);return think&&canThink(m)?Math.min(Math.round(n*1.5),3072):n})(),gap:st.safe?gapMs(m):0,messages:[{role:'system',content:sys||sysBase()},...shot(),...history()]})});
 // ---------- 대화 진행 ----------
 const toEn=(w,m,t)=>new Promise(res=>{let acc='';w.onmessage=({data:d})=>{if(d.type==='tok')acc+=d.t;else if(d.type==='done')res(clean(acc).replace(/^["'`]+|["'`]+$/g,'').trim());else if(d.type==='err')res('')};
 w.postMessage({type:'chat',noThink:true,max:100,gap:0,messages:[{role:'system',content:'Turn the user\'s request into one short English prompt for an image generator, describing only the picture to draw. Output only the prompt.'},{role:'user',content:t}]})});
