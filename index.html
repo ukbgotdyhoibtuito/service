@@ -232,6 +232,7 @@
     }
     .category.device { background: #eaf4ff; color: #3973a9; }
     .category.life { background: #eaf6ef; color: #3e8561; }
+    .category.other { background: #f0f1f2; color: #666b70; }
     .card-title {
       margin: 0;
       font-size: 17px;
@@ -325,6 +326,7 @@
         <button class="filter" type="button" data-filter="ai" aria-pressed="false">AI</button>
         <button class="filter" type="button" data-filter="device" aria-pressed="false">기기 도구</button>
         <button class="filter" type="button" data-filter="life" aria-pressed="false">라이프</button>
+        <button class="filter" type="button" data-filter="other" aria-pressed="false">기타</button>
               </div>
       <label class="search-wrap">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -335,7 +337,7 @@
     </section>
 
     <div class="results-line">
-      <span id="result-count" aria-live="polite">8개 서비스</span>
+      <span id="result-count" aria-live="polite">10개 서비스</span>
     </div>
 
     <section class="grid" id="service-grid" aria-label="서비스 목록">
@@ -377,6 +379,20 @@
             <div class="card-top"><span class="category">AI</span></div>
             <h2 class="card-title">Local AI Studio</h2>
             <p class="card-description">내 컴퓨터에서 로컬 AI 모델을 실행하는 작업 공간.</p>
+          </div>
+        </a>
+      </article>
+
+      <article class="service-card" data-category="ai" data-search="d-ai dai daily ai 디스코드 봇 멘션 ai 채팅 캐릭터 챗">
+        <a class="card-link" href="https://d-ai.dutkyobot.r-e.kr/">
+          <div class="preview">
+            <img src="./og/dai.png" alt="D-AI 미리보기" loading="lazy" decoding="async">
+            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </div>
+          <div class="card-content">
+            <div class="card-top"><span class="category">AI</span></div>
+            <h2 class="card-title">D-AI</h2>
+            <p class="card-description">디스코드 멘션으로 호출하고 검색·시간 조회까지 활용하는 AI 봇.</p>
           </div>
         </a>
       </article>
@@ -433,6 +449,20 @@
             <div class="card-top"><span class="category life">라이프</span></div>
             <h2 class="card-title">Nature Canvas</h2>
             <p class="card-description">자연 풍경을 전체 화면으로 감상하는 힐링 슬라이드쇼.</p>
+          </div>
+        </a>
+      </article>
+
+      <article class="service-card" data-category="other" data-search="quickmod 퀵모드"> 
+        <a class="card-link" href="https://quickmod.dutkyobot.r-e.kr/">
+          <div class="preview">
+            <img src="./og/quickmod.png" alt="QuickMod 미리보기" loading="lazy" decoding="async">
+            <span class="open-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </div>
+          <div class="card-content">
+            <div class="card-top"><span class="category other">기타</span></div>
+            <h2 class="card-title">QuickMod</h2>
+            <p class="card-description">QuickMod 서비스 페이지를 바로 열어보세요.</p>
           </div>
         </a>
       </article>
