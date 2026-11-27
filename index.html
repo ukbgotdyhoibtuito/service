@@ -242,30 +242,15 @@
       background: #d9dbd8;
     }
     .filter.filter-dai {
-      position: relative;
-      isolation: isolate;
       background: linear-gradient(120deg, #21D67A 0%, #3B9EFF 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
       -webkit-text-fill-color: transparent;
       border-bottom-color: transparent;
-    }
-    .filter.filter-dai::before {
-      content: "D-AI";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      font: inherit;
-      letter-spacing: inherit;
-      background: linear-gradient(120deg, #21D67A 0%, #3B9EFF 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      filter: blur(3px);
-      opacity: .96;
-      pointer-events: none;
+      filter:
+        drop-shadow(0 0 3px rgba(33, 214, 122, .72))
+        drop-shadow(0 0 3px rgba(59, 158, 255, .72));
     }
     .filter.filter-dai::after {
       content: "";
